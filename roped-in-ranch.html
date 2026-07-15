@@ -10,6 +10,7 @@
 <title>Roped In Ranch</title>
 <link rel="manifest" href="manifest.json">
 <link rel="stylesheet" href="https://unpkg.com/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 :root{
@@ -730,8 +731,128 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sa
 const PASSWORD = 'roper2024';
 let S = { animals:[], medical:[], breeding:[], feed:[], milk:[], products:[], sales:[], butcher:[], freezer:[], beds:[], seeds:[], harvest:[], reminders:[] };
 
+// ── SUPABASE ──
+// Shared cloud database so both phones read/write the same data.
+// This app still just uses one shared password (not real per-user login),
+// so the anon key below is deliberately allowed full read/write access.
+const SUPABASE_URL = 'https://hrtuhexblsbdjfdbfblg.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhydHVoZXhibHNiZGpmZGJmYmxnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQxMzg2MjAsImV4cCI6MjA5OTcxNDYyMH0.UuG4vU-qqcEs7LffzhgDqb2tVBq9RaeR1gwhvOpJXvs';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+const TABLES = ['animals','medical','breeding','feed','milk','products','sales','butcher','freezer','beds','seeds','harvest','reminders'];
+// Only a few fields are named differently in the database (snake_case columns);
+// everything else matches the app's field names exactly.
+const COL_RENAME = {
+  medical:{animalId:'animal_id'}, breeding:{animalId:'animal_id'}, feed:{animalId:'animal_id'},
+  milk:{animalId:'animal_id'}, reminders:{animalId:'animal_id'},
+  butcher:{animalId:'animal_id', animalName:'animal_name'}
+};
+function toDb(table,obj){ const map=COL_RENAME[table]||{}; const out={}; for(const k in obj){ if(obj[k]===undefined) continue; out[map[k]||k]=obj[k]; } return out; }
+function fromDb(table,row){ const map=COL_RENAME[table]||{}; const inv={}; for(const k in map) inv[map[k]]=k; const out={}; for(const k in row){ if(k==='updated_at') continue; out[inv[k]||k]=row[k]; } return out; }
+
+let lastSyncedIds = {};    // table -> Set of ids known to be on the server, used to detect local deletes
+let syncInFlight = false, syncQueued = false;
+let pendingSyncMessage = null; // set by pullState(), shown by doLogin() once the app is visible
+
 function loadState(){ try{ const d=localStorage.getItem('rir2'); if(d) S=Object.assign(S,JSON.parse(d)); }catch(e){} }
-function saveState(){ localStorage.setItem('rir2',JSON.stringify(S)); }
+function cacheState(){ localStorage.setItem('rir2',JSON.stringify(S)); }
+
+// Pull everything down from Supabase (used on login). Falls back to the local
+// cache if there's no connection, so the app still works offline.
+//
+// First-run migration: if this device has existing data saved locally (from
+// before cloud sync existed) but the cloud database is still empty, push the
+// local data up instead of overwriting it with nothing. This only matters
+// once — after the first device seeds the cloud, every device (including
+// this one) just pulls the shared data normally from then on.
+async function pullState(){
+  try{
+    const remote = {};
+    let remoteTotal = 0;
+    for(const t of TABLES){
+      const {data,error} = await sb.from(t).select('*');
+      if(error) throw error;
+      remote[t] = data;
+      remoteTotal += data.length;
+    }
+
+    loadState(); // load whatever's cached locally, if anything
+    const localTotal = TABLES.reduce((sum,t)=>sum+(S[t]?.length||0),0);
+
+    if(remoteTotal===0 && localTotal>0){
+      // Cloud is empty but this device has local data — seed the cloud from here.
+      for(const t of TABLES) lastSyncedIds[t] = new Set();
+      await pushState();
+      pendingSyncMessage = 'Uploaded your existing ranch data to the cloud';
+    } else {
+      for(const t of TABLES){
+        S[t] = remote[t].map(r=>fromDb(t,r));
+        lastSyncedIds[t] = new Set(remote[t].map(r=>r.id));
+      }
+    }
+    cacheState();
+    return true;
+  }catch(e){
+    console.error('Could not reach Supabase, using local cache instead:', e);
+    loadState();
+    return false;
+  }
+}
+
+// Push local changes up to Supabase: upsert every row currently in S, and
+// delete any row that used to be there but is gone now (covers every add/
+// edit/delete pattern in the app without having to touch each call site).
+async function pushState(){
+  if(syncInFlight){ syncQueued=true; return; }
+  syncInFlight=true;
+  try{
+    for(const t of TABLES){
+      const rows = S[t]||[];
+      const currentIds = new Set(rows.map(r=>r.id));
+      const prevIds = lastSyncedIds[t]||new Set();
+      const removed = [...prevIds].filter(id=>!currentIds.has(id));
+      if(rows.length){
+        const {error} = await sb.from(t).upsert(rows.map(r=>toDb(t,r)));
+        if(error) console.error('Sync upsert failed for', t, error);
+      }
+      if(removed.length){
+        const {error} = await sb.from(t).delete().in('id',removed);
+        if(error) console.error('Sync delete failed for', t, error);
+      }
+      lastSyncedIds[t]=currentIds;
+    }
+  }finally{
+    syncInFlight=false;
+    if(syncQueued){ syncQueued=false; pushState(); }
+  }
+}
+
+function saveState(){ cacheState(); pushState(); }
+
+// Realtime: when Jessica's phone (or Sean's) changes something, refresh that
+// table here and re-render so both devices stay in sync automatically.
+function subscribeRealtime(){
+  const channel = sb.channel('rir-sync');
+  TABLES.forEach(t=>{
+    channel.on('postgres_changes', {event:'*', schema:'public', table:t}, async ()=>{
+      const {data,error} = await sb.from(t).select('*');
+      if(error){ console.error('Realtime refresh failed for', t, error); return; }
+      S[t] = data.map(r=>fromDb(t,r));
+      lastSyncedIds[t] = new Set(data.map(r=>r.id));
+      cacheState();
+      renderCurrentView();
+    });
+  });
+  channel.subscribe();
+}
+
+// Re-renders whatever's currently on screen; used after a realtime update
+// arrives from the other phone.
+function renderCurrentView(){
+  setGreeting(); renderHome(); renderAnimals(); milkSeg(milkTab||'milk'); butcherSeg(butcherTab||'records'); gardenSeg(gardenTab||'beds'); renderReminders(remFilter||'upcoming');
+  if(currentAnimalId && document.getElementById('page-detail').classList.contains('active')) openDetail(currentAnimalId);
+}
+
 function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,5); }
 function today(){ return new Date().toISOString().slice(0,10); }
 function fmt(d){ if(!d) return ''; const [y,m,day]=d.split('-'); return `${+m}/${+day}/${y}`; }
@@ -740,11 +861,19 @@ function calcAge(dob){ const d=new Date(dob),n=new Date(); let mo=(n.getFullYear
 // ═══════════════════════════════════════════════════
 // AUTH
 // ═══════════════════════════════════════════════════
-function doLogin(){
+async function doLogin(){
   if(document.getElementById('login-pass').value===PASSWORD){
+    const errEl=document.getElementById('login-err');
+    errEl.style.color=''; errEl.textContent='Loading ranch data…';
+    pendingSyncMessage=null;
+    const ok = await pullState();
     document.getElementById('login-screen').style.display='none';
     document.getElementById('app').style.display='flex';
-    loadState(); initApp();
+    errEl.textContent='';
+    initApp();
+    subscribeRealtime();
+    if(!ok) toast("Couldn't reach the cloud — showing your last saved data. Changes will sync once you're back online.");
+    else if(pendingSyncMessage) toast(pendingSyncMessage);
   } else { document.getElementById('login-err').textContent='Incorrect password.'; document.getElementById('login-pass').value=''; }
 }
 document.getElementById('login-pass').addEventListener('keydown',e=>{ if(e.key==='Enter') doLogin(); });
@@ -755,7 +884,7 @@ document.getElementById('login-pass').addEventListener('keydown',e=>{ if(e.key==
 let currentTab='home', prevTab='home', currentAnimalId=null;
 
 function initApp(){
-  setGreeting(); renderHome(); renderAnimals(); renderMilk('milk'); renderButcher('records'); renderGarden('beds'); renderReminders('upcoming');
+  setGreeting(); renderHome(); renderAnimals(); renderMilk('milk'); renderButcher('records'); gardenSeg('beds'); renderReminders('upcoming');
 }
 
 const TAB_TITLES={home:'Roped In Ranch',animals:'Animals',milk:'Milk & Products',butcher:'Butcher & Freezer',garden:'Garden',reminders:'Reminders'};
@@ -993,7 +1122,22 @@ function toggleDue(sel){ document.getElementById('f-due-group').style.display=se
 
 function handlePhoto(e){
   const f=e.target.files[0]; if(!f) return;
-  const r=new FileReader(); r.onload=ev=>{ photoDataUrl=ev.target.result; document.getElementById('photo-area').innerHTML=`<img src="${photoDataUrl}" class="photo-preview"><div class="photo-upload-text" style="font-size:12px">Tap to change</div>`; }; r.readAsDataURL(f);
+  const r=new FileReader(); r.onload=ev=>{
+    // Resize/compress before storing so a full-resolution phone photo doesn't
+    // bloat the database or slow down syncing between phones.
+    const img=new Image();
+    img.onload=()=>{
+      const maxDim=900;
+      const scale=Math.min(1, maxDim/Math.max(img.width,img.height));
+      const w=Math.round(img.width*scale), h=Math.round(img.height*scale);
+      const canvas=document.createElement('canvas'); canvas.width=w; canvas.height=h;
+      canvas.getContext('2d').drawImage(img,0,0,w,h);
+      photoDataUrl=canvas.toDataURL('image/jpeg',0.75);
+      document.getElementById('photo-area').innerHTML=`<img src="${photoDataUrl}" class="photo-preview"><div class="photo-upload-text" style="font-size:12px">Tap to change</div>`;
+    };
+    img.onerror=()=>{ photoDataUrl=ev.target.result; document.getElementById('photo-area').innerHTML=`<img src="${photoDataUrl}" class="photo-preview"><div class="photo-upload-text" style="font-size:12px">Tap to change</div>`; };
+    img.src=ev.target.result;
+  }; r.readAsDataURL(f);
 }
 
 function saveAnimal(){
