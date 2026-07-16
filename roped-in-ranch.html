@@ -1005,7 +1005,7 @@ function animalCardHtml(a){
       <div class="tags-row">
         ${a.sex?`<span class="tag ${a.sex.startsWith('F')?'tag-purple':'tag-blue'}">${a.sex}</span>`:''}
         <span class="tag ${a.health==='Good'?'tag-green':a.health==='Watch'?'tag-amber':'tag-red'}">${a.health||'Good'}</span>
-        ${a.pregnant==='Yes'?'<span class="tag tag-purple">Pregnant</span>':''}
+        ${a.pregnant==='Yes'?'<span class="tag tag-purple">Pregnant</span>':a.pregnant==='Unknown'?'<span class="tag tag-amber">Maybe Pregnant</span>':''}
         ${latestBreeding?`<span class="tag ${breedingTagClass(latestBreeding.outcome)}">Bred · ${breedingTagLabel(latestBreeding.outcome)}</span>`:''}
         ${a.status&&a.status!=='Active'?`<span class="tag tag-brand">${a.status}</span>`:''}
       </div>
