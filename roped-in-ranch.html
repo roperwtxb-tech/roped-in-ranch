@@ -982,9 +982,21 @@ function setSpecies(val){
 // ═══════════════════════════════════════════════════
 let specFilter='All';
 
+function breedingTagClass(outcome){
+  if(outcome==='Pending') return 'tag-amber';
+  if(outcome==='Confirmed') return 'tag-purple';
+  if(outcome==='Success') return 'tag-green';
+  return 'tag-red'; // Failed, Miscarriage
+}
+function breedingTagLabel(outcome){
+  if(outcome==='Success') return 'Birth';
+  if(outcome==='Failed') return 'Did Not Take';
+  return outcome; // Pending, Confirmed, Miscarriage
+}
 function animalCardHtml(a){
   const em=a.photo?`<div class="animal-avatar"><img src="${a.photo}" alt="${a.name}"></div>`:`<div class="animal-avatar">${specEmoji(a.species)}</div>`;
   const age=a.dob?calcAge(a.dob):'';
+  const latestBreeding=S.breeding.filter(b=>b.animalId===a.id).sort((x,y)=>y.date.localeCompare(x.date))[0];
   return `<div class="animal-card" onclick="openDetail('${a.id}')">
     ${em}
     <div class="animal-info">
@@ -994,6 +1006,7 @@ function animalCardHtml(a){
         ${a.sex?`<span class="tag ${a.sex.startsWith('F')?'tag-purple':'tag-blue'}">${a.sex}</span>`:''}
         <span class="tag ${a.health==='Good'?'tag-green':a.health==='Watch'?'tag-amber':'tag-red'}">${a.health||'Good'}</span>
         ${a.pregnant==='Yes'?'<span class="tag tag-purple">Pregnant</span>':''}
+        ${latestBreeding?`<span class="tag ${breedingTagClass(latestBreeding.outcome)}">Bred · ${breedingTagLabel(latestBreeding.outcome)}</span>`:''}
         ${a.status&&a.status!=='Active'?`<span class="tag tag-brand">${a.status}</span>`:''}
       </div>
     </div>
