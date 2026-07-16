@@ -1,0 +1,1592 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Roped In Ranch">
+<meta name="theme-color" content="#3B2A1A">
+<title>Roped In Ranch</title>
+<link rel="manifest" href="manifest.json">
+<link rel="stylesheet" href="https://unpkg.com/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{
+  --brand:#3B2A1A;--brand-mid:#6B4C30;--brand-light:#C8A97A;--brand-pale:#F5EDD8;
+  --green:#3B6D11;--green-pale:#EAF3DE;--green-mid:#639922;
+  --red:#A32D2D;--red-pale:#FCEBEB;
+  --amber:#854F0B;--amber-pale:#FAEEDA;
+  --blue:#185FA5;--blue-pale:#E6F1FB;
+  --purple:#534AB7;--purple-pale:#EEEDFE;
+  --teal:#0F6E56;--teal-pale:#E1F5EE;
+  --text:#1A1208;--text2:#6B5A3E;--text3:#9E8A6A;
+  --border:#D6C8A8;--surface:#FFFFFF;--bg:#F8F2E4;
+  --radius:12px;--radius-sm:8px;
+}
+html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);overflow:hidden}
+
+/* ── LOGIN ── */
+#login-screen{position:fixed;inset:0;background:var(--brand);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:999;padding:2rem}
+.login-logo{font-size:56px;margin-bottom:0.5rem}
+.login-title{font-size:26px;font-weight:700;color:#F5EDD8;letter-spacing:-0.5px;margin-bottom:4px}
+.login-sub{font-size:12px;color:var(--brand-light);margin-bottom:2.5rem;letter-spacing:1.5px;text-transform:uppercase}
+.login-card{background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.15);border-radius:var(--radius);padding:1.5rem;width:100%;max-width:320px}
+.login-label{font-size:12px;color:var(--brand-light);margin-bottom:6px;display:block;letter-spacing:0.5px}
+.login-input{width:100%;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);border-radius:var(--radius-sm);color:#fff;font-size:16px;padding:12px 14px;margin-bottom:1rem;outline:none;font-family:inherit}
+.login-input::placeholder{color:rgba(255,255,255,0.35)}
+.login-input:focus{border-color:var(--brand-light)}
+.login-btn{width:100%;background:var(--brand-light);border:none;border-radius:var(--radius-sm);color:var(--brand);font-size:15px;font-weight:700;padding:13px;cursor:pointer}
+.login-btn:active{opacity:0.85}
+.login-err{color:#F09595;font-size:13px;text-align:center;margin-top:8px;min-height:18px}
+
+/* ── APP SHELL ── */
+#app{position:fixed;inset:0;display:none;flex-direction:column}
+.header{background:var(--brand);padding-top:env(safe-area-inset-top,0);flex-shrink:0}
+.header-inner{display:flex;align-items:center;padding:12px 16px;gap:10px}
+.header-logo{font-size:20px}
+.header-title{font-size:17px;font-weight:700;color:#F5EDD8;flex:1;letter-spacing:-0.3px}
+.header-btn{background:none;border:none;color:var(--brand-light);font-size:22px;cursor:pointer;padding:4px;display:flex;align-items:center}
+
+/* ── BOTTOM NAV ── */
+.bottom-nav{background:var(--brand);border-top:1px solid rgba(255,255,255,0.1);display:flex;padding-bottom:env(safe-area-inset-bottom,0);flex-shrink:0}
+.nav-tab{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;background:none;border:none;color:rgba(200,169,122,0.55);font-size:9.5px;cursor:pointer;padding:8px 2px 10px;letter-spacing:0.2px;font-family:inherit;transition:color 0.15s}
+.nav-tab i{font-size:21px;line-height:1}
+.nav-tab.active{color:#F5EDD8}
+
+/* ── PAGES ── */
+.pages{flex:1;overflow:hidden;position:relative}
+.page{position:absolute;inset:0;overflow-y:auto;-webkit-overflow-scrolling:touch;display:none;padding-bottom:16px}
+.page.active{display:block}
+
+/* ── COMMON UI ── */
+.page-header{padding:16px 16px 8px;display:flex;align-items:center;justify-content:space-between}
+.page-title{font-size:22px;font-weight:700;letter-spacing:-0.5px}
+.btn-add{background:var(--brand);color:var(--brand-pale);border:none;border-radius:20px;padding:8px 16px;font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:5px}
+.btn-add i{font-size:15px}
+.btn-add:active{opacity:0.8}
+.section-label{padding:14px 16px 8px;font-size:11px;font-weight:700;color:var(--text3);letter-spacing:1px;text-transform:uppercase}
+.search-wrap{position:relative;flex:1}
+.search-wrap i{position:absolute;left:11px;top:50%;transform:translateY(-50%);color:var(--text3);font-size:16px;pointer-events:none}
+.search-input{width:100%;background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:9px 14px 9px 36px;font-size:14px;color:var(--text);outline:none}
+.search-bar{padding:0 16px 12px;display:flex;gap:8px;align-items:center}
+.filter-chips{display:flex;gap:8px;padding:0 16px 12px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+.filter-chips::-webkit-scrollbar{display:none}
+.chip{flex-shrink:0;background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:6px 13px;font-size:13px;color:var(--text2);cursor:pointer;white-space:nowrap}
+.chip.active{background:var(--brand);border-color:var(--brand);color:var(--brand-pale)}
+.seg-control{display:flex;background:var(--border);border-radius:10px;padding:2px;margin:0 16px 12px}
+.seg-btn{flex:1;background:none;border:none;border-radius:8px;padding:8px 4px;font-size:12px;color:var(--text2);cursor:pointer;font-family:inherit;font-weight:500}
+.seg-btn.active{background:var(--surface);color:var(--text);font-weight:700;box-shadow:0 1px 3px rgba(0,0,0,0.1)}
+.empty-state{text-align:center;padding:3rem 2rem;color:var(--text3)}
+.empty-icon{font-size:44px;margin-bottom:1rem;opacity:0.4}
+.empty-text{font-size:15px;color:var(--text2);margin-bottom:4px}
+.empty-sub{font-size:13px}
+
+/* ── CARDS ── */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);margin:0 16px 10px;overflow:hidden}
+.card-row{display:flex;justify-content:space-between;padding:10px 14px;font-size:14px;border-bottom:1px solid var(--border)}
+.card-row:last-child{border-bottom:none}
+.card-key{color:var(--text2)}
+.card-val{color:var(--text);font-weight:500;text-align:right;max-width:60%}
+.card-header{padding:12px 14px;font-size:13px;font-weight:700;color:var(--text2);letter-spacing:0.5px;text-transform:uppercase;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:8px}
+.card-header i{font-size:16px;color:var(--brand-mid)}
+.card-header-left{display:flex;align-items:center;gap:8px}
+.list-item{padding:12px 14px;border-bottom:1px solid var(--border);font-size:14px;cursor:pointer}
+.list-item:last-child{border-bottom:none}
+.list-item:active{background:var(--bg)}
+.list-item-title{font-weight:600;color:var(--text);margin-bottom:2px}
+.list-item-sub{font-size:12px;color:var(--text3)}
+.list-item-note{font-size:13px;color:var(--text2);margin-top:3px;line-height:1.4}
+.add-row-btn{margin:10px 14px;background:var(--brand-pale);border:1px dashed var(--brand-light);border-radius:var(--radius-sm);padding:10px;font-size:14px;color:var(--brand-mid);cursor:pointer;width:calc(100% - 28px);display:flex;align-items:center;justify-content:center;gap:6px;font-family:inherit}
+
+/* ── STAT CARDS ── */
+.stats-row{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;padding:0 16px 4px}
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px;text-align:center}
+.stat-num{font-size:26px;font-weight:700;color:var(--brand);line-height:1}
+.stat-label{font-size:11px;color:var(--text3);margin-top:3px;letter-spacing:0.3px}
+
+/* ── TAGS ── */
+.tag{font-size:11px;padding:2px 8px;border-radius:10px;font-weight:500;display:inline-block}
+.tag-green{background:var(--green-pale);color:var(--green)}
+.tag-red{background:var(--red-pale);color:var(--red)}
+.tag-amber{background:var(--amber-pale);color:var(--amber)}
+.tag-blue{background:var(--blue-pale);color:var(--blue)}
+.tag-purple{background:var(--purple-pale);color:var(--purple)}
+.tag-teal{background:var(--teal-pale);color:var(--teal)}
+.tag-brand{background:var(--brand-pale);color:var(--brand-mid)}
+
+/* ── ANIMAL CARDS ── */
+.animal-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px;display:flex;gap:12px;align-items:flex-start;cursor:pointer;margin:0 16px 10px}
+.animal-card:active{transform:scale(0.98)}
+.animal-avatar{width:52px;height:52px;border-radius:10px;background:var(--brand-pale);display:flex;align-items:center;justify-content:center;font-size:24px;overflow:hidden;flex-shrink:0}
+.animal-avatar img{width:100%;height:100%;object-fit:cover}
+.animal-info{flex:1;min-width:0}
+.animal-name{font-size:16px;font-weight:700;color:var(--text);margin-bottom:2px}
+.animal-meta{font-size:12px;color:var(--text3);margin-bottom:5px}
+.tags-row{display:flex;gap:4px;flex-wrap:wrap}
+
+/* ── DETAIL PAGE ── */
+.detail-hero{background:var(--brand);padding:env(safe-area-inset-top,0) 16px 20px;color:#F5EDD8}
+.back-btn{background:none;border:none;color:var(--brand-light);font-size:14px;cursor:pointer;display:flex;align-items:center;gap:4px;padding:12px 0 8px;font-family:inherit}
+.back-btn i{font-size:18px}
+.detail-photo{width:76px;height:76px;border-radius:12px;background:var(--brand-mid);display:flex;align-items:center;justify-content:center;font-size:38px;overflow:hidden;border:2px solid rgba(255,255,255,0.2);margin-bottom:10px}
+.detail-photo img{width:100%;height:100%;object-fit:cover}
+.detail-name{font-size:24px;font-weight:700;letter-spacing:-0.5px;margin-bottom:3px}
+.detail-sub{font-size:13px;color:var(--brand-light)}
+.detail-tags{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.detail-body{padding:14px}
+.detail-actions{display:flex;gap:8px;margin-bottom:12px}
+.det-btn{flex:1;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 6px;font-size:12px;font-weight:600;color:var(--text2);cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:4px;font-family:inherit}
+.det-btn i{font-size:18px}
+.det-btn.primary{background:var(--brand);color:var(--brand-pale);border-color:var(--brand)}
+.det-btn.danger{background:var(--red-pale);color:var(--red);border-color:#F09595}
+.det-btn.green{background:var(--green-pale);color:var(--green);border-color:#C0DD97}
+
+/* ── SHEET / MODAL ── */
+.sheet-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:200;display:none;align-items:flex-end}
+.sheet-overlay.open{display:flex}
+.sheet{background:var(--bg);border-radius:20px 20px 0 0;width:100%;max-height:93vh;overflow-y:auto;-webkit-overflow-scrolling:touch;padding-bottom:env(safe-area-inset-bottom,20px)}
+.sheet-handle{width:40px;height:4px;background:var(--border);border-radius:2px;margin:12px auto 4px}
+.sheet-header{display:flex;align-items:center;justify-content:space-between;padding:10px 20px 14px}
+.sheet-title{font-size:18px;font-weight:700;color:var(--text)}
+.sheet-close{background:var(--border);border:none;border-radius:50%;width:30px;height:30px;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--text2)}
+.sheet-body{padding:0 20px 20px}
+
+/* ── FORMS ── */
+.fg{margin-bottom:14px}
+.fl{font-size:11px;font-weight:700;color:var(--text2);margin-bottom:5px;display:block;letter-spacing:0.4px;text-transform:uppercase}
+.fi,.fs,.ft{width:100%;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 12px;font-size:15px;color:var(--text);outline:none;font-family:inherit}
+.fi:focus,.fs:focus,.ft:focus{border-color:var(--brand-mid)}
+.ft{resize:vertical;min-height:72px;line-height:1.5}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.btn-primary{width:100%;background:var(--brand);color:var(--brand-pale);border:none;border-radius:var(--radius-sm);padding:14px;font-size:16px;font-weight:700;cursor:pointer;margin-top:6px;font-family:inherit}
+.btn-primary:active{opacity:0.85}
+.btn-secondary{width:100%;background:var(--surface);color:var(--text2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px;font-size:15px;cursor:pointer;margin-top:6px;font-family:inherit}
+.btn-danger-outline{width:100%;background:var(--red-pale);color:var(--red);border:1px solid #F09595;border-radius:var(--radius-sm);padding:12px;font-size:15px;font-weight:600;cursor:pointer;margin-top:6px;font-family:inherit}
+.photo-upload{border:2px dashed var(--border);border-radius:var(--radius);padding:20px;text-align:center;cursor:pointer;background:var(--surface)}
+.photo-upload i{font-size:28px;color:var(--text3);margin-bottom:6px;display:block}
+.photo-upload-text{font-size:13px;color:var(--text3)}
+.photo-preview{width:100%;height:140px;border-radius:var(--radius);object-fit:cover;margin-bottom:6px}
+
+/* ── DASHBOARD ── */
+.dash-greeting{padding:16px 16px 12px}
+.dash-g-text{font-size:22px;font-weight:700;letter-spacing:-0.5px}
+.dash-g-sub{font-size:12px;color:var(--text3);margin-top:2px}
+.reminder-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);margin:0 16px 8px;padding:12px;display:flex;gap:10px;align-items:flex-start}
+.rem-icon{width:34px;height:34px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:17px}
+.rem-icon.medical{background:var(--red-pale);color:var(--red)}
+.rem-icon.breeding{background:var(--purple-pale);color:var(--purple)}
+.rem-icon.feed{background:var(--amber-pale);color:var(--amber)}
+.rem-icon.general{background:var(--blue-pale);color:var(--blue)}
+.rem-icon.garden{background:var(--green-pale);color:var(--green)}
+.rem-title{font-size:14px;font-weight:600;color:var(--text)}
+.rem-sub{font-size:12px;color:var(--text3);margin-top:1px}
+.due-badge{font-size:11px;font-weight:600;padding:3px 8px;border-radius:8px;flex-shrink:0;white-space:nowrap}
+.due-over{background:var(--red-pale);color:var(--red)}
+.due-today{background:var(--amber-pale);color:var(--amber)}
+.due-soon{background:var(--blue-pale);color:var(--blue)}
+.due-ok{background:var(--green-pale);color:var(--green)}
+
+/* ── MILK / PRODUCTS ── */
+.milk-row{display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid var(--border);font-size:14px}
+.milk-row:last-child{border-bottom:none}
+.milk-date{color:var(--text3);font-size:12px;min-width:60px}
+.milk-animal{font-weight:600;color:var(--text);flex:1}
+.milk-qty{font-weight:700;color:var(--brand);font-size:15px}
+
+/* ── FREEZER ITEMS ── */
+.freezer-item{display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid var(--border)}
+.freezer-item:last-child{border-bottom:none}
+.freezer-name{flex:1;font-size:14px;font-weight:600;color:var(--text)}
+.freezer-qty{font-size:14px;color:var(--text2)}
+.freezer-low{color:var(--red);font-weight:600}
+
+/* ── GARDEN ── */
+.garden-bed{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);margin:0 16px 10px;overflow:hidden;cursor:pointer}
+.garden-bed:active{transform:scale(0.98)}
+.bed-header{padding:12px 14px;display:flex;align-items:center;gap:10px}
+.bed-icon{font-size:22px}
+.bed-name{font-size:15px;font-weight:700;color:var(--text);flex:1}
+.bed-count{font-size:12px;color:var(--text3)}
+.bed-plants{padding:0 14px 12px;display:flex;gap:6px;flex-wrap:wrap}
+.plant-chip{background:var(--green-pale);border:1px solid #C0DD97;border-radius:16px;padding:4px 10px;font-size:12px;color:var(--green);font-weight:500}
+.companion-box{background:var(--teal-pale);border:1px solid #9FE1CB;border-radius:var(--radius-sm);padding:10px 12px;margin:0 14px 12px;font-size:13px;color:var(--teal)}
+.companion-box strong{display:block;margin-bottom:3px;font-size:11px;letter-spacing:0.5px;text-transform:uppercase}
+
+/* ── TOAST ── */
+.toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:var(--brand);color:var(--brand-pale);padding:10px 20px;border-radius:20px;font-size:14px;font-weight:600;z-index:999;display:none;white-space:nowrap;pointer-events:none}
+.toast.show{display:block}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login-screen">
+  <div class="login-logo">🤠</div>
+  <div class="login-title">Roped In Ranch</div>
+  <div class="login-sub">Ranch Manager</div>
+  <div class="login-card">
+    <label class="login-label">Password</label>
+    <input class="login-input" type="password" id="login-pass" placeholder="Enter password" autocomplete="current-password">
+    <button class="login-btn" onclick="doLogin()">Sign In</button>
+    <div class="login-err" id="login-err"></div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <div class="header">
+    <div class="header-inner">
+      <span class="header-logo">🤠</span>
+      <span class="header-title" id="header-title">Roped In Ranch</span>
+      <button class="header-btn" id="hdr-add" style="display:none" onclick="headerAdd()"><i class="ti ti-plus"></i></button>
+    </div>
+  </div>
+
+  <div class="pages">
+    <!-- HOME -->
+    <div class="page active" id="page-home">
+      <div class="dash-greeting">
+        <div class="dash-g-text" id="dash-greet"></div>
+        <div class="dash-g-sub" id="dash-date"></div>
+      </div>
+      <div class="stats-row" id="home-stats"></div>
+      <div class="section-label">Upcoming reminders</div>
+      <div id="home-reminders"></div>
+      <div class="section-label">Recent animals</div>
+      <div id="home-animals"></div>
+    </div>
+
+    <!-- ANIMALS -->
+    <div class="page" id="page-animals">
+      <div class="page-header">
+        <div class="page-title">Animals</div>
+        <button class="btn-add" onclick="openSheet('animal-sheet',resetAnimalForm)"><i class="ti ti-plus"></i>Add</button>
+      </div>
+      <div class="search-bar"><div class="search-wrap"><i class="ti ti-search"></i><input class="search-input" type="text" placeholder="Search name or tag…" id="animal-search" oninput="renderAnimals()"></div></div>
+      <div class="filter-chips" id="species-chips"></div>
+      <div id="animals-list"></div>
+    </div>
+
+    <!-- ANIMAL DETAIL -->
+    <div class="page" id="page-detail">
+      <div class="detail-hero">
+        <button class="back-btn" onclick="goBack()"><i class="ti ti-arrow-left"></i>Back</button>
+        <div class="detail-photo" id="det-photo"></div>
+        <div class="detail-name" id="det-name"></div>
+        <div class="detail-sub" id="det-sub"></div>
+        <div class="detail-tags" id="det-tags"></div>
+      </div>
+      <div class="detail-body">
+        <div class="detail-actions" id="det-actions"></div>
+        <div id="det-content"></div>
+      </div>
+    </div>
+
+    <!-- MILK & PRODUCTS -->
+    <div class="page" id="page-milk">
+      <div class="seg-control" style="margin-top:12px">
+        <button class="seg-btn active" onclick="milkSeg('milk')">Milk Log</button>
+        <button class="seg-btn" onclick="milkSeg('products')">Products</button>
+        <button class="seg-btn" onclick="milkSeg('sales')">Sales</button>
+      </div>
+      <div id="milk-section"></div>
+    </div>
+
+    <!-- BUTCHER & FREEZER -->
+    <div class="page" id="page-butcher">
+      <div class="seg-control" style="margin-top:12px">
+        <button class="seg-btn active" onclick="butcherSeg('records')">Butcher Log</button>
+        <button class="seg-btn" onclick="butcherSeg('freezer')">Freezer</button>
+        <button class="seg-btn" onclick="butcherSeg('sales')">Sales</button>
+      </div>
+      <div id="butcher-section"></div>
+    </div>
+
+    <!-- GARDEN -->
+    <div class="page" id="page-garden">
+      <div class="seg-control" style="margin-top:12px">
+        <button class="seg-btn active" onclick="gardenSeg('beds')">Beds</button>
+        <button class="seg-btn" onclick="gardenSeg('seeds')">Seeds</button>
+        <button class="seg-btn" onclick="gardenSeg('harvest')">Harvest</button>
+        <button class="seg-btn" onclick="gardenSeg('companion')">Companions</button>
+      </div>
+      <div id="garden-section"></div>
+    </div>
+
+    <!-- REMINDERS -->
+    <div class="page" id="page-reminders">
+      <div class="page-header">
+        <div class="page-title">Reminders</div>
+        <button class="btn-add" onclick="openSheet('reminder-sheet',resetReminderForm)"><i class="ti ti-plus"></i>Add</button>
+      </div>
+      <div class="seg-control">
+        <button class="seg-btn active" onclick="remSeg('upcoming')">Upcoming</button>
+        <button class="seg-btn" onclick="remSeg('past')">Past</button>
+        <button class="seg-btn" onclick="remSeg('all')">All</button>
+      </div>
+      <div id="reminders-list"></div>
+    </div>
+  </div>
+
+  <!-- BOTTOM NAV -->
+  <div class="bottom-nav">
+    <button class="nav-tab active" data-page="home" onclick="switchTab('home')"><i class="ti ti-home"></i>Home</button>
+    <button class="nav-tab" data-page="animals" onclick="switchTab('animals')"><i class="ti ti-paw"></i>Animals</button>
+    <button class="nav-tab" data-page="milk" onclick="switchTab('milk')"><i class="ti ti-droplet"></i>Milk</button>
+    <button class="nav-tab" data-page="butcher" onclick="switchTab('butcher')"><i class="ti ti-meat"></i>Butcher</button>
+    <button class="nav-tab" data-page="garden" onclick="switchTab('garden')"><i class="ti ti-plant"></i>Garden</button>
+    <button class="nav-tab" data-page="reminders" onclick="switchTab('reminders')"><i class="ti ti-bell"></i>Alerts</button>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<!-- ═══════════ SHEETS ═══════════ -->
+
+<!-- ANIMAL SHEET -->
+<div class="sheet-overlay" id="animal-sheet">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-header">
+      <div class="sheet-title" id="animal-sheet-title">Add Animal</div>
+      <button class="sheet-close" onclick="closeSheet('animal-sheet')">✕</button>
+    </div>
+    <div class="sheet-body">
+      <div class="fg">
+        <label class="fl">Photo</label>
+        <div class="photo-upload" id="photo-area" onclick="document.getElementById('photo-file').click()">
+          <i class="ti ti-camera"></i><div class="photo-upload-text">Tap to take photo or upload</div>
+        </div>
+        <input type="file" id="photo-file" accept="image/*" capture="environment" style="display:none" onchange="handlePhoto(event)">
+      </div>
+      <div class="form-row">
+        <div class="fg"><label class="fl">Name *</label><input class="fi" id="f-name" placeholder="Rosie"></div>
+        <div class="fg"><label class="fl">Tag / ID</label><input class="fi" id="f-tag" placeholder="G-001"></div>
+      </div>
+      <div class="fg">
+        <label class="fl">Species *</label>
+        <select class="fs" id="f-species" onchange="handleSpeciesChange(this)">
+          <option value="">Select…</option>
+          <optgroup label="Poultry">
+            <option>Chicken</option><option>Turkey</option><option>Duck</option><option>Goose</option>
+            <option>Guinea Fowl</option><option>Quail</option><option>Peacock</option>
+            <option>Pheasant</option><option>Emu</option><option>Ostrich</option>
+          </optgroup>
+          <optgroup label="Livestock">
+            <option>Cattle</option><option>Goat</option><option>Sheep</option><option>Pig</option>
+            <option>Horse</option><option>Donkey</option><option>Mule</option>
+            <option>Llama</option><option>Alpaca</option><option>Bison</option>
+            <option>Rabbit</option><option>Deer</option>
+          </optgroup>
+          <optgroup label="Pets & Working">
+            <option>Dog</option><option>Cat</option><option>Barn Cat</option>
+          </optgroup>
+          <optgroup label="Other">
+            <option value="__custom__">✏️ Type my own…</option>
+          </optgroup>
+        </select>
+        <input class="fi" id="f-species-custom" placeholder="Enter species…" style="display:none;margin-top:8px">
+      </div>
+      <div class="form-row">
+        <div class="fg"><label class="fl">Breed</label><input class="fi" id="f-breed" placeholder="Nigerian Dwarf"></div>
+        <div class="fg"><label class="fl">Sex</label>
+          <select class="fs" id="f-sex"><option value="">Select…</option><option>Female</option><option>Male</option><option>Wether/Castrated</option></select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="fg"><label class="fl">Date of Birth</label><input class="fi" type="date" id="f-dob"></div>
+        <div class="fg"><label class="fl">Color</label><input class="fi" id="f-color" placeholder="Black & white"></div>
+      </div>
+      <div class="form-row">
+        <div class="fg"><label class="fl">Health</label>
+          <select class="fs" id="f-health"><option value="Good">Good</option><option value="Watch">Watch</option><option value="Sick">Sick</option></select>
+        </div>
+        <div class="fg"><label class="fl">Weight (lbs)</label><input class="fi" type="number" id="f-weight" placeholder="125"></div>
+      </div>
+      <div class="form-row">
+        <div class="fg"><label class="fl">Sire</label><input class="fi" id="f-sire" placeholder="Name/ID"></div>
+        <div class="fg"><label class="fl">Dam</label><input class="fi" id="f-dam" placeholder="Name/ID"></div>
+      </div>
+      <div class="form-row">
+        <div class="fg"><label class="fl">Status</label>
+          <select class="fs" id="f-status"><option>Active</option><option>Breeding Stock</option><option>Sold</option><option>Deceased</option></select>
+        </div>
+        <div class="fg"><label class="fl">Pregnant?</label>
+          <select class="fs" id="f-pregnant" onchange="toggleDue(this)"><option value="No">No</option><option value="Yes">Yes</option><option value="Unknown">Unknown</option></select>
+        </div>
+      </div>
+      <div class="fg" id="f-due-group" style="display:none"><label class="fl">Due Date</label><input class="fi" type="date" id="f-due"></div>
+      <div class="fg"><label class="fl">Notes</label><textarea class="ft" id="f-notes" placeholder="Additional notes…"></textarea></div>
+      <input type="hidden" id="f-id"><input type="hidden" id="f-photo-data">
+      <button class="btn-primary" onclick="saveAnimal()">Save Animal</button>
+      <button class="btn-secondary" onclick="closeSheet('animal-sheet')">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- MEDICAL SHEET -->
+<div class="sheet-overlay" id="medical-sheet">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-header"><div class="sheet-title" id="med-sheet-title">Medical Record</div><button class="sheet-close" onclick="closeSheet('medical-sheet')">✕</button></div>
+    <div class="sheet-body">
+      <div class="fg"><label class="fl">Type</label>
+        <select class="fs" id="m-type"><option>Vaccination</option><option>Deworming</option><option>Vet Visit</option><option>Medication</option><option>Injury</option><option>Surgery</option><option>Hoof/Farrier</option><option>Other</option></select>
+      </div>
+      <div class="form-row">
+        <div class="fg"><label class="fl">Date</label><input class="fi" type="date" id="m-date"></div>
+        <div class="fg"><label class="fl">Weight (lbs)</label><input class="fi" type="number" id="m-weight" placeholder="—"></div>
+      </div>
+      <div class="fg"><label class="fl">Provider / Product</label><input class="fi" id="m-provider" placeholder="Dr. Smith / CDT Vaccine"></div>
+      <div class="fg"><label class="fl">Dose / Amount</label><input class="fi" id="m-dose" placeholder="2cc"></div>
+      <div class="fg"><label class="fl">Next Due Date</label><input class="fi" type="date" id="m-next"></div>
+      <div class="fg"><label class="fl">Notes</label><textarea class="ft" id="m-notes"></textarea></div>
+      <input type="hidden" id="m-animal-id">
+      <button class="btn-primary" onclick="saveMedical()">Save Record</button>
+      <button class="btn-secondary" onclick="closeSheet('medical-sheet')">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- BREEDING SHEET -->
+<div class="sheet-overlay" id="breeding-sheet">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-header"><div class="sheet-title">Breeding Record</div><button class="sheet-close" onclick="closeSheet('breeding-sheet')">✕</button></div>
+    <div class="sheet-body">
+      <div class="fg"><label class="fl">Bred to (Sire)</label><input class="fi" id="b-sire" placeholder="Buck / Ram name"></div>
+      <div class="form-row">
+        <div class="fg"><label class="fl">Breed Date</label><input class="fi" type="date" id="b-date"></div>
+        <div class="fg"><label class="fl">Expected Due</label><input class="fi" type="date" id="b-due"></div>
+      </div>
+      <div class="form-row">
+        <div class="fg"><label class="fl">Method</label>
+          <select class="fs" id="b-method"><option>Natural</option><option>AI</option><option>Embryo Transfer</option></select>
+        </div>
+        <div class="fg"><label class="fl">Outcome</label>
+          <select class="fs" id="b-outcome"><option value="Pending">Pending</option><option value="Confirmed">Confirmed</option><option value="Success">Birth</option><option value="Failed">Did Not Take</option><option value="Miscarriage">Miscarriage</option></select>
+        </div>
+      </div>
+      <div class="fg"><label class="fl">Offspring (names if born)</label><input class="fi" id="b-offspring" placeholder="Luna, Star"></div>
+      <div class="fg"><label class="fl">Notes</label><textarea class="ft" id="b-notes"></textarea></div>
+      <input type="hidden" id="b-animal-id">
+      <button class="btn-primary" onclick="saveBreeding()">Save Record</button>
+      <button class="btn-secondary" onclick="closeSheet('breeding-sheet')">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- FEED/WEIGHT SHEET -->
+<div class="sheet-overlay" id="feed-sheet">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-header"><div class="sheet-title">Weight & Feed Log</div><button class="sheet-close" onclick="closeSheet('feed-sheet')">✕</button></div>
+    <div class="sheet-body">
+      <div class="fg"><label class="fl">Date</label><input class="fi" type="date" id="fw-date"></div>
+      <div class="form-row">
+        <div class="fg"><label class="fl">Weight (lbs)</label><input class="fi" type="number" id="fw-weight" placeholder="125"></div>
+        <div class="fg"><label class="fl">Feed Amount (lbs)</label><input class="fi" type="number" id="fw-amount" placeholder="3"></div>
+      </div>
+      <div class="fg"><label class="fl">Feed Type</label><input class="fi" id="fw-feed" placeholder="Hay, grain, pasture…"></div>
+      <div class="fg"><label class="fl">Notes</label><textarea class="ft" id="fw-notes"></textarea></div>
+      <input type="hidden" id="fw-animal-id">
+      <button class="btn-primary" onclick="saveFeed()">Save Log</button>
+      <button class="btn-secondary" onclick="closeSheet('feed-sheet')">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- MILK LOG SHEET -->
+<div class="sheet-overlay" id="milk-sheet">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-header"><div class="sheet-title">Log Milk</div><button class="sheet-close" onclick="closeSheet('milk-sheet')">✕</button></div>
+    <div class="sheet-body">
+      <div class="fg"><label class="fl">Animal</label>
+        <select class="fs" id="ml-animal" id="ml-animal"></select>
+      </div>
+      <div class="form-row">
+        <div class="fg"><label class="fl">Date</label><input class="fi" type="date" id="ml-date"></div>
+        <div class="fg"><label class="fl">Quantity (oz)</label><input class="fi" type="number" id="ml-qty" placeholder="32"></div>
+      </div>
+      <div class="fg"><label class="fl">Session</label>
+        <select class="fs" id="ml-session"><option value="AM">Morning</option><option value="PM">Evening</option><option value="Both">Both</option></select>
+      </div>
+      <div class="fg"><label class="fl">Notes</label><textarea class="ft" id="ml-notes" placeholder="Quality, behavior…"></textarea></div>
+      <button class="btn-primary" onclick="saveMilkLog()">Save Log</button>
+      <button class="btn-secondary" onclick="closeSheet('milk-sheet')">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- PRODUCT SHEET -->
+<div class="sheet-overlay" id="product-sheet">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-header"><div class="sheet-title" id="prod-sheet-title">Add Product</div><button class="sheet-close" onclick="closeSheet('product-sheet')">✕</button></div>
+    <div class="sheet-body">
+      <div class="fg"><label class="fl">Product Name *</label><input class="fi" id="p-name" placeholder="Lavender Goat Milk Soap"></div>
+      <div class="form-row">
+        <div class="fg"><label class="fl">Category</label>
+          <select class="fs" id="p-cat"><option>Soap</option><option>Lotion</option><option>Cream</option><option>Balm</option><option>Shampoo</option><option>Conditioner</option><option>Bath Bomb</option><option>Candle</option><option>Other</option></select>
+        </div>
+        <div class="fg"><label class="fl">Batch Date</label><input class="fi" type="date" id="p-date"></div>
+      </div>
+      <div class="form-row">
+        <div class="fg"><label class="fl">Units Made</label><input class="fi" type="number" id="p-made" placeholder="24"></div>
+        <div class="fg"><label class="fl">Units On Hand</label><input class="fi" type="number" id="p-onhand" placeholder="24"></div>
+      </div>
+      <div class="form-row">
+        <div class="fg"><label class="fl">Cost / Unit ($)</label><input class="fi" type="number" id="p-cost" placeholder="3.50"></div>
+        <div class="fg"><label class="fl">Price / Unit ($)</label><input class="fi" type="number" id="p-price" placeholder="8.00"></div>
+      </div>
+      <div class="fg"><label class="fl">Milk Used (oz)</label><input class="fi" type="number" id="p-milk" placeholder="16"></div>
+      <div class="fg"><label class="fl">Recipe / Ingredients</label><textarea class="ft" id="p-recipe" placeholder="Goat milk, lye, coconut oil, lavender EO…"></textarea></div>
+      <div class="fg"><label class="fl">Notes</label><textarea class="ft" id="p-notes"></textarea></div>
+      <input type="hidden" id="p-id">
+      <button class="btn-primary" onclick="saveProduct()">Save Product</button>
+      <button class="btn-secondary" onclick="closeSheet('product-sheet')">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- PRODUCT SALE SHEET -->
+<div class="sheet-overlay" id="sale-sheet">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-header"><div class="sheet-title">Record Sale</div><button class="sheet-close" onclick="closeSheet('sale-sheet')">✕</button></div>
+    <div class="sheet-body">
+      <div class="fg"><label class="fl">Type</label>
+        <select class="fs" id="sl-type"><option value="product">Product</option><option value="meat">Meat / Animal</option></select>
+      </div>
+      <div class="fg"><label class="fl">Item / Description *</label><input class="fi" id="sl-item" placeholder="Lavender Soap x6"></div>
+      <div class="form-row">
+        <div class="fg"><label class="fl">Date</label><input class="fi" type="date" id="sl-date"></div>
+        <div class="fg"><label class="fl">Amount ($)</label><input class="fi" type="number" id="sl-amount" placeholder="48.00"></div>
+      </div>
+      <div class="fg"><label class="fl">Buyer Name</label><input class="fi" id="sl-buyer" placeholder="Jane Smith"></div>
+      <div class="fg"><label class="fl">Notes</label><textarea class="ft" id="sl-notes"></textarea></div>
+      <button class="btn-primary" onclick="saveSale()">Save Sale</button>
+      <button class="btn-secondary" onclick="closeSheet('sale-sheet')">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- BUTCHER SHEET -->
+<div class="sheet-overlay" id="butcher-sheet">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-header"><div class="sheet-title">Butcher Record</div><button class="sheet-close" onclick="closeSheet('butcher-sheet')">✕</button></div>
+    <div class="sheet-body">
+      <div class="fg"><label class="fl">Animal</label>
+        <select class="fs" id="bk-animal"></select>
+      </div>
+      <div class="form-row">
+        <div class="fg"><label class="fl">Date</label><input class="fi" type="date" id="bk-date"></div>
+        <div class="fg"><label class="fl">Live Weight (lbs)</label><input class="fi" type="number" id="bk-live" placeholder="150"></div>
+      </div>
+      <div class="form-row">
+        <div class="fg"><label class="fl">Hanging Weight (lbs)</label><input class="fi" type="number" id="bk-hang" placeholder="90"></div>
+        <div class="fg"><label class="fl">Processed Weight (lbs)</label><input class="fi" type="number" id="bk-processed" placeholder="70"></div>
+      </div>
+      <div class="fg"><label class="fl">Purpose</label>
+        <select class="fs" id="bk-purpose"><option>Personal Use</option><option>Sale</option><option>Both</option></select>
+      </div>
+      <div class="fg"><label class="fl">Cuts / Yield Breakdown</label><textarea class="ft" id="bk-cuts" placeholder="Chops: 20 lbs, Ground: 15 lbs, Roasts: 12 lbs…"></textarea></div>
+      <div class="fg"><label class="fl">Butcher / Processor</label><input class="fi" id="bk-processor" placeholder="Self / Name"></div>
+      <div class="fg"><label class="fl">Notes</label><textarea class="ft" id="bk-notes"></textarea></div>
+      <button class="btn-primary" onclick="saveButcher()">Save Record</button>
+      <button class="btn-secondary" onclick="closeSheet('butcher-sheet')">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- FREEZER SHEET -->
+<div class="sheet-overlay" id="freezer-sheet">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-header"><div class="sheet-title" id="frz-title">Freezer Item</div><button class="sheet-close" onclick="closeSheet('freezer-sheet')">✕</button></div>
+    <div class="sheet-body">
+      <div class="fg"><label class="fl">Item Name *</label><input class="fi" id="fz-name" placeholder="Goat Chops"></div>
+      <div class="form-row">
+        <div class="fg"><label class="fl">Quantity (lbs or units)</label><input class="fi" type="number" id="fz-qty" placeholder="10"></div>
+        <div class="fg"><label class="fl">Unit</label>
+          <select class="fs" id="fz-unit"><option>lbs</option><option>packages</option><option>cuts</option><option>whole</option></select>
+        </div>
+      </div>
+      <div class="fg"><label class="fl">Source Animal / Batch</label><input class="fi" id="fz-source" placeholder="Rosie — butchered 6/1"></div>
+      <div class="fg"><label class="fl">Low Stock Alert (qty)</label><input class="fi" type="number" id="fz-low" placeholder="2"></div>
+      <div class="fg"><label class="fl">Notes</label><textarea class="ft" id="fz-notes"></textarea></div>
+      <input type="hidden" id="fz-id">
+      <button class="btn-primary" onclick="saveFreezer()">Save Item</button>
+      <button class="btn-secondary" onclick="closeSheet('freezer-sheet')">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- GARDEN BED SHEET -->
+<div class="sheet-overlay" id="bed-sheet">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-header"><div class="sheet-title" id="bed-title">Garden Bed</div><button class="sheet-close" onclick="closeSheet('bed-sheet')">✕</button></div>
+    <div class="sheet-body">
+      <div class="fg"><label class="fl">Bed / Row Name *</label><input class="fi" id="bd-name" placeholder="Raised Bed 1 / Row A"></div>
+      <div class="form-row">
+        <div class="fg"><label class="fl">Size</label><input class="fi" id="bd-size" placeholder="4x8 ft"></div>
+        <div class="fg"><label class="fl">Soil Type</label><input class="fi" id="bd-soil" placeholder="Loam, raised mix…"></div>
+      </div>
+      <div class="fg"><label class="fl">Plants (comma separated)</label><input class="fi" id="bd-plants" placeholder="Tomatoes, Basil, Marigolds"></div>
+      <div class="fg"><label class="fl">Planted Date</label><input class="fi" type="date" id="bd-planted"></div>
+      <div class="fg"><label class="fl">Expected Harvest</label><input class="fi" type="date" id="bd-harvest"></div>
+      <div class="fg"><label class="fl">Companion Notes</label><textarea class="ft" id="bd-companion" placeholder="Basil next to tomatoes repels aphids. Keep fennel away from others."></textarea></div>
+      <div class="fg"><label class="fl">Notes / Observations</label><textarea class="ft" id="bd-notes"></textarea></div>
+      <input type="hidden" id="bd-id">
+      <button class="btn-primary" onclick="saveBed()">Save Bed</button>
+      <button class="btn-secondary" onclick="closeSheet('bed-sheet')">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- SEED SHEET -->
+<div class="sheet-overlay" id="seed-sheet">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-header"><div class="sheet-title" id="seed-title">Seed Inventory</div><button class="sheet-close" onclick="closeSheet('seed-sheet')">✕</button></div>
+    <div class="sheet-body">
+      <div class="fg"><label class="fl">Plant / Variety *</label><input class="fi" id="sd-name" placeholder="Brandywine Tomato"></div>
+      <div class="form-row">
+        <div class="fg"><label class="fl">Quantity</label><input class="fi" type="number" id="sd-qty" placeholder="100"></div>
+        <div class="fg"><label class="fl">Unit</label>
+          <select class="fs" id="sd-unit"><option>seeds</option><option>packets</option><option>oz</option><option>lbs</option></select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="fg"><label class="fl">Source / Brand</label><input class="fi" id="sd-source" placeholder="Baker Creek"></div>
+        <div class="fg"><label class="fl">Year</label><input class="fi" type="number" id="sd-year" placeholder="2025"></div>
+      </div>
+      <div class="fg"><label class="fl">Germination Rate (%)</label><input class="fi" type="number" id="sd-germ" placeholder="90"></div>
+      <div class="fg"><label class="fl">Storage Location</label><input class="fi" id="sd-storage" placeholder="Fridge, dark cabinet…"></div>
+      <div class="fg"><label class="fl">Notes</label><textarea class="ft" id="sd-notes"></textarea></div>
+      <input type="hidden" id="sd-id">
+      <button class="btn-primary" onclick="saveSeed()">Save Seed</button>
+      <button class="btn-secondary" onclick="closeSheet('seed-sheet')">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- HARVEST SHEET -->
+<div class="sheet-overlay" id="harvest-sheet">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-header"><div class="sheet-title">Log Harvest</div><button class="sheet-close" onclick="closeSheet('harvest-sheet')">✕</button></div>
+    <div class="sheet-body">
+      <div class="fg"><label class="fl">Crop *</label><input class="fi" id="hv-crop" placeholder="Tomatoes"></div>
+      <div class="form-row">
+        <div class="fg"><label class="fl">Date</label><input class="fi" type="date" id="hv-date"></div>
+        <div class="fg"><label class="fl">Yield</label><input class="fi" type="number" id="hv-yield" placeholder="12"></div>
+      </div>
+      <div class="fg"><label class="fl">Unit</label>
+        <select class="fs" id="hv-unit"><option>lbs</option><option>oz</option><option>bushels</option><option>items</option><option>dozen</option><option>quarts</option></select>
+      </div>
+      <div class="fg"><label class="fl">Bed / Row</label><input class="fi" id="hv-bed" placeholder="Raised Bed 1"></div>
+      <div class="fg"><label class="fl">Quality</label>
+        <select class="fs" id="hv-quality"><option>Excellent</option><option>Good</option><option>Fair</option><option>Poor</option></select>
+      </div>
+      <div class="fg"><label class="fl">Notes</label><textarea class="ft" id="hv-notes" placeholder="Pest damage, weather impact…"></textarea></div>
+      <button class="btn-primary" onclick="saveHarvest()">Save Harvest</button>
+      <button class="btn-secondary" onclick="closeSheet('harvest-sheet')">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- REMINDER SHEET -->
+<div class="sheet-overlay" id="reminder-sheet">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-header"><div class="sheet-title">Add Reminder</div><button class="sheet-close" onclick="closeSheet('reminder-sheet')">✕</button></div>
+    <div class="sheet-body">
+      <div class="fg"><label class="fl">Title *</label><input class="fi" id="r-title" placeholder="CDT booster for Rosie"></div>
+      <div class="fg"><label class="fl">Type</label>
+        <select class="fs" id="r-type">
+          <option value="medical">Medical</option><option value="breeding">Breeding</option>
+          <option value="feed">Feed / Weight</option><option value="garden">Garden</option><option value="general">General</option>
+        </select>
+      </div>
+      <div class="fg"><label class="fl">Animal (optional)</label><select class="fs" id="r-animal"></select></div>
+      <div class="fg"><label class="fl">Due Date *</label><input class="fi" type="date" id="r-due"></div>
+      <div class="fg"><label class="fl">Notes</label><textarea class="ft" id="r-notes"></textarea></div>
+      <button class="btn-primary" onclick="saveReminder()">Save Reminder</button>
+      <button class="btn-secondary" onclick="closeSheet('reminder-sheet')">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════
+// DATA
+// ═══════════════════════════════════════════════════
+const PASSWORD = 'roper2024';
+let S = { animals:[], medical:[], breeding:[], feed:[], milk:[], products:[], sales:[], butcher:[], freezer:[], beds:[], seeds:[], harvest:[], reminders:[] };
+
+// ── SUPABASE ──
+// Shared cloud database so both phones read/write the same data.
+// This app still just uses one shared password (not real per-user login),
+// so the anon key below is deliberately allowed full read/write access.
+const SUPABASE_URL = 'https://hrtuhexblsbdjfdbfblg.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhydHVoZXhibHNiZGpmZGJmYmxnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQxMzg2MjAsImV4cCI6MjA5OTcxNDYyMH0.UuG4vU-qqcEs7LffzhgDqb2tVBq9RaeR1gwhvOpJXvs';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+const TABLES = ['animals','medical','breeding','feed','milk','products','sales','butcher','freezer','beds','seeds','harvest','reminders'];
+// Only a few fields are named differently in the database (snake_case columns);
+// everything else matches the app's field names exactly.
+const COL_RENAME = {
+  medical:{animalId:'animal_id'}, breeding:{animalId:'animal_id'}, feed:{animalId:'animal_id'},
+  milk:{animalId:'animal_id'}, reminders:{animalId:'animal_id'},
+  butcher:{animalId:'animal_id', animalName:'animal_name'}
+};
+function toDb(table,obj){ const map=COL_RENAME[table]||{}; const out={}; for(const k in obj){ if(obj[k]===undefined) continue; out[map[k]||k]=obj[k]; } return out; }
+function fromDb(table,row){ const map=COL_RENAME[table]||{}; const inv={}; for(const k in map) inv[map[k]]=k; const out={}; for(const k in row){ if(k==='updated_at') continue; out[inv[k]||k]=row[k]; } return out; }
+
+let lastSyncedIds = {};    // table -> Set of ids known to be on the server, used to detect local deletes
+let syncInFlight = false, syncQueued = false;
+let pendingSyncMessage = null; // set by pullState(), shown by doLogin() once the app is visible
+
+function loadState(){ try{ const d=localStorage.getItem('rir2'); if(d) S=Object.assign(S,JSON.parse(d)); }catch(e){} }
+function cacheState(){ localStorage.setItem('rir2',JSON.stringify(S)); }
+
+// Pull everything down from Supabase (used on login). Falls back to the local
+// cache if there's no connection, so the app still works offline.
+//
+// First-run migration: if this device has existing data saved locally (from
+// before cloud sync existed) but the cloud database is still empty, push the
+// local data up instead of overwriting it with nothing. This only matters
+// once — after the first device seeds the cloud, every device (including
+// this one) just pulls the shared data normally from then on.
+async function pullState(){
+  try{
+    const remote = {};
+    let remoteTotal = 0;
+    for(const t of TABLES){
+      const {data,error} = await sb.from(t).select('*');
+      if(error) throw error;
+      remote[t] = data;
+      remoteTotal += data.length;
+    }
+
+    loadState(); // load whatever's cached locally, if anything
+    const localTotal = TABLES.reduce((sum,t)=>sum+(S[t]?.length||0),0);
+
+    if(remoteTotal===0 && localTotal>0){
+      // Cloud is empty but this device has local data — seed the cloud from here.
+      for(const t of TABLES) lastSyncedIds[t] = new Set();
+      await pushState();
+      pendingSyncMessage = 'Uploaded your existing ranch data to the cloud';
+    } else {
+      for(const t of TABLES){
+        S[t] = remote[t].map(r=>fromDb(t,r));
+        lastSyncedIds[t] = new Set(remote[t].map(r=>r.id));
+      }
+    }
+    cacheState();
+    return true;
+  }catch(e){
+    console.error('Could not reach Supabase, using local cache instead:', e);
+    loadState();
+    return false;
+  }
+}
+
+// Push local changes up to Supabase: upsert every row currently in S, and
+// delete any row that used to be there but is gone now (covers every add/
+// edit/delete pattern in the app without having to touch each call site).
+async function pushState(){
+  if(syncInFlight){ syncQueued=true; return; }
+  syncInFlight=true;
+  try{
+    for(const t of TABLES){
+      const rows = S[t]||[];
+      const currentIds = new Set(rows.map(r=>r.id));
+      const prevIds = lastSyncedIds[t]||new Set();
+      const removed = [...prevIds].filter(id=>!currentIds.has(id));
+      if(rows.length){
+        const {error} = await sb.from(t).upsert(rows.map(r=>toDb(t,r)));
+        if(error) console.error('Sync upsert failed for', t, error);
+      }
+      if(removed.length){
+        const {error} = await sb.from(t).delete().in('id',removed);
+        if(error) console.error('Sync delete failed for', t, error);
+      }
+      lastSyncedIds[t]=currentIds;
+    }
+  }finally{
+    syncInFlight=false;
+    if(syncQueued){ syncQueued=false; pushState(); }
+  }
+}
+
+function saveState(){ cacheState(); pushState(); }
+
+// Realtime: when Jessica's phone (or Sean's) changes something, refresh that
+// table here and re-render so both devices stay in sync automatically.
+function subscribeRealtime(){
+  const channel = sb.channel('rir-sync');
+  TABLES.forEach(t=>{
+    channel.on('postgres_changes', {event:'*', schema:'public', table:t}, async ()=>{
+      const {data,error} = await sb.from(t).select('*');
+      if(error){ console.error('Realtime refresh failed for', t, error); return; }
+      S[t] = data.map(r=>fromDb(t,r));
+      lastSyncedIds[t] = new Set(data.map(r=>r.id));
+      cacheState();
+      renderCurrentView();
+    });
+  });
+  channel.subscribe();
+}
+
+// Re-renders whatever's currently on screen; used after a realtime update
+// arrives from the other phone.
+function renderCurrentView(){
+  setGreeting(); renderHome(); renderAnimals(); milkSeg(milkTab||'milk'); butcherSeg(butcherTab||'records'); gardenSeg(gardenTab||'beds'); renderReminders(remFilter||'upcoming');
+  if(currentAnimalId && document.getElementById('page-detail').classList.contains('active')) openDetail(currentAnimalId);
+}
+
+function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,5); }
+function today(){ return new Date().toISOString().slice(0,10); }
+function fmt(d){ if(!d) return ''; const [y,m,day]=d.split('-'); return `${+m}/${+day}/${y}`; }
+function calcAge(dob){ const d=new Date(dob),n=new Date(); let mo=(n.getFullYear()-d.getFullYear())*12+(n.getMonth()-d.getMonth()); if(mo<0)return ''; return mo<12?mo+'mo':Math.floor(mo/12)+'yr'; }
+
+// ═══════════════════════════════════════════════════
+// AUTH
+// ═══════════════════════════════════════════════════
+async function doLogin(){
+  if(document.getElementById('login-pass').value===PASSWORD){
+    const errEl=document.getElementById('login-err');
+    errEl.style.color=''; errEl.textContent='Loading ranch data…';
+    pendingSyncMessage=null;
+    const ok = await pullState();
+    document.getElementById('login-screen').style.display='none';
+    document.getElementById('app').style.display='flex';
+    errEl.textContent='';
+    initApp();
+    subscribeRealtime();
+    if(!ok) toast("Couldn't reach the cloud — showing your last saved data. Changes will sync once you're back online.");
+    else if(pendingSyncMessage) toast(pendingSyncMessage);
+  } else { document.getElementById('login-err').textContent='Incorrect password.'; document.getElementById('login-pass').value=''; }
+}
+document.getElementById('login-pass').addEventListener('keydown',e=>{ if(e.key==='Enter') doLogin(); });
+
+// ═══════════════════════════════════════════════════
+// NAVIGATION
+// ═══════════════════════════════════════════════════
+let currentTab='home', prevTab='home', currentAnimalId=null;
+
+function initApp(){
+  setGreeting(); renderHome(); renderAnimals(); renderMilk('milk'); renderButcher('records'); gardenSeg('beds'); renderReminders('upcoming');
+}
+
+const TAB_TITLES={home:'Roped In Ranch',animals:'Animals',milk:'Milk & Products',butcher:'Butcher & Freezer',garden:'Garden',reminders:'Reminders'};
+
+function switchTab(tab){
+  if(tab===currentTab && tab!=='animals') return;
+  prevTab=currentTab; currentTab=tab;
+  document.querySelectorAll('.nav-tab').forEach(t=>t.classList.toggle('active',t.dataset.page===tab));
+  document.querySelectorAll('.page').forEach(p=>{ if(p.id!=='page-detail') p.classList.toggle('active',p.id===`page-${tab}`); });
+  document.getElementById('page-detail').classList.remove('active');
+  document.getElementById('header-title').textContent=TAB_TITLES[tab]||tab;
+  const addBtn=document.getElementById('hdr-add');
+  addBtn.style.display=tab==='reminders'?'flex':'none';
+  if(tab==='home') renderHome();
+  if(tab==='animals') renderAnimals();
+  if(tab==='milk'){ milkSeg('milk'); }
+  if(tab==='butcher'){ butcherSeg('records'); }
+  if(tab==='garden'){ gardenSeg('beds'); }
+  if(tab==='reminders') renderReminders(remFilter);
+}
+
+function headerAdd(){
+  if(currentTab==='reminders') { resetReminderForm(); openSheet('reminder-sheet'); }
+}
+
+function goBack(){
+  document.getElementById('page-detail').classList.remove('active');
+  document.getElementById(`page-${prevTab||'animals'}`).classList.add('active');
+  document.getElementById('header-title').textContent=TAB_TITLES[prevTab||'animals'];
+  currentTab=prevTab||'animals';
+  document.querySelectorAll('.nav-tab').forEach(t=>t.classList.toggle('active',t.dataset.page===currentTab));
+}
+
+// ═══════════════════════════════════════════════════
+// SHEETS
+// ═══════════════════════════════════════════════════
+function openSheet(id, initFn){ if(initFn) initFn(); document.getElementById(id).classList.add('open'); }
+function closeSheet(id){ document.getElementById(id).classList.remove('open'); }
+
+// ═══════════════════════════════════════════════════
+// TOAST
+// ═══════════════════════════════════════════════════
+function toast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2200); }
+
+// ═══════════════════════════════════════════════════
+// HOME
+// ═══════════════════════════════════════════════════
+function setGreeting(){
+  const h=new Date().getHours();
+  document.getElementById('dash-greet').textContent=h<12?'Good morning! 🌅':h<17?'Good afternoon! ☀️':'Good evening! 🌙';
+  document.getElementById('dash-date').textContent=new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'});
+}
+
+function renderHome(){
+  const active=S.animals.filter(a=>a.status==='Active'||a.status==='Breeding Stock').length;
+  const pregnant=S.animals.filter(a=>a.pregnant==='Yes').length;
+  const todayStr=today();
+  const nowD=new Date(); nowD.setHours(0,0,0,0);
+  const soon=new Date(nowD); soon.setDate(soon.getDate()+7);
+  const upcoming=S.reminders.filter(r=>{ const d=new Date(r.due); d.setHours(0,0,0,0); return d>=nowD; });
+  const milkTotal=S.milk.filter(m=>m.date===todayStr).reduce((s,m)=>s+(+m.qty||0),0);
+  document.getElementById('home-stats').innerHTML=`
+    <div class="stat-card"><div class="stat-num">${active}</div><div class="stat-label">Active Animals</div></div>
+    <div class="stat-card"><div class="stat-num">${pregnant}</div><div class="stat-label">Pregnant</div></div>
+    <div class="stat-card"><div class="stat-num">${upcoming.filter(r=>{ const d=new Date(r.due); d.setHours(0,0,0,0); return d<=soon; }).length}</div><div class="stat-label">Due This Week</div></div>
+    <div class="stat-card"><div class="stat-num">${milkTotal}</div><div class="stat-label">Oz Milk Today</div></div>
+  `;
+  const remEl=document.getElementById('home-reminders');
+  const upList=upcoming.slice(0,4);
+  remEl.innerHTML=upList.length?upList.map(r=>remCardHtml(r,nowD)).join(''):`<div class="empty-state" style="padding:1rem 2rem"><div class="empty-text">No upcoming reminders</div></div>`;
+  const recent=[...S.animals].sort((a,b)=>b.created-a.created).slice(0,3);
+  document.getElementById('home-animals').innerHTML=recent.length?recent.map(a=>animalCardHtml(a)).join(''):`<div class="empty-state" style="padding:1rem 2rem"><div class="empty-text">No animals yet</div><div class="empty-sub">Tap Animals to get started</div></div>`;
+}
+
+// ═══════════════════════════════════════════════════
+// SPECIES
+// ═══════════════════════════════════════════════════
+const EMOJI={Chicken:'🐔',Turkey:'🦃',Duck:'🦆',Goose:'🪿','Guinea Fowl':'🐦',Quail:'🐦',Peacock:'🦚',Pheasant:'🐦',Emu:'🦤',Ostrich:'🦤',Cattle:'🐄',Goat:'🐐',Sheep:'🐑',Pig:'🐷',Horse:'🐴',Donkey:'🫏',Mule:'🐴',Llama:'🦙',Alpaca:'🦙',Bison:'🐃',Rabbit:'🐇',Deer:'🦌',Dog:'🐕','Barn Cat':'🐱',Cat:'🐱',Guinea:'🐦',Other:'🐾'};
+function specEmoji(sp){ return EMOJI[sp]||'🐾'; }
+
+function handleSpeciesChange(sel){
+  const c=document.getElementById('f-species-custom');
+  if(sel.value==='__custom__'){ c.style.display='block'; c.focus(); } else { c.style.display='none'; c.value=''; }
+}
+function getSpecies(){ const s=document.getElementById('f-species'); return s.value==='__custom__'?document.getElementById('f-species-custom').value.trim():s.value; }
+function setSpecies(val){
+  const sel=document.getElementById('f-species'),c=document.getElementById('f-species-custom');
+  let found=false;
+  for(let o of sel.options){ if(o.value===val){sel.value=val;found=true;break;} }
+  if(!found&&val){sel.value='__custom__';c.style.display='block';c.value=val;}else{c.style.display='none';c.value='';}
+}
+
+// ═══════════════════════════════════════════════════
+// ANIMALS
+// ═══════════════════════════════════════════════════
+let specFilter='All';
+
+function animalCardHtml(a){
+  const em=a.photo?`<div class="animal-avatar"><img src="${a.photo}" alt="${a.name}"></div>`:`<div class="animal-avatar">${specEmoji(a.species)}</div>`;
+  const age=a.dob?calcAge(a.dob):'';
+  return `<div class="animal-card" onclick="openDetail('${a.id}')">
+    ${em}
+    <div class="animal-info">
+      <div class="animal-name">${a.name}</div>
+      <div class="animal-meta">${[a.species,a.breed,a.tag].filter(Boolean).join(' · ')}${age?' · '+age:''}</div>
+      <div class="tags-row">
+        ${a.sex?`<span class="tag ${a.sex.startsWith('F')?'tag-purple':'tag-blue'}">${a.sex}</span>`:''}
+        <span class="tag ${a.health==='Good'?'tag-green':a.health==='Watch'?'tag-amber':'tag-red'}">${a.health||'Good'}</span>
+        ${a.pregnant==='Yes'?'<span class="tag tag-purple">Pregnant</span>':''}
+        ${a.status&&a.status!=='Active'?`<span class="tag tag-brand">${a.status}</span>`:''}
+      </div>
+    </div>
+    <i class="ti ti-chevron-right" style="color:var(--text3);font-size:16px;align-self:center"></i>
+  </div>`;
+}
+
+function renderAnimals(){
+  const species=['All',...new Set(S.animals.map(a=>a.species).filter(Boolean))];
+  document.getElementById('species-chips').innerHTML=species.map(s=>`<div class="chip${s===specFilter?' active':''}" onclick="setSpecFilter('${s}')">${s}</div>`).join('');
+  const q=(document.getElementById('animal-search')?.value||'').toLowerCase();
+  const filtered=S.animals.filter(a=>(!q||a.name.toLowerCase().includes(q)||(a.tag||'').toLowerCase().includes(q))&&(specFilter==='All'||a.species===specFilter));
+  document.getElementById('animals-list').innerHTML=filtered.length?filtered.map(animalCardHtml).join(''):`<div class="empty-state"><div class="empty-icon">🐾</div><div class="empty-text">${S.animals.length?'No matches':'No animals yet'}</div><div class="empty-sub">${S.animals.length?'Try a different filter':'Tap Add to get started'}</div></div>`;
+}
+
+function setSpecFilter(s){ specFilter=s; renderAnimals(); }
+
+// ── ANIMAL DETAIL ──
+function openDetail(id){
+  currentAnimalId=id; prevTab=currentTab;
+  const a=S.animals.find(x=>x.id===id); if(!a) return;
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.getElementById('page-detail').classList.add('active');
+  document.getElementById('header-title').textContent=a.name;
+  document.getElementById('hdr-add').style.display='none';
+  document.getElementById('det-photo').innerHTML=a.photo?`<img src="${a.photo}" alt="${a.name}">`:`${specEmoji(a.species)}`;
+  document.getElementById('det-name').textContent=a.name;
+  document.getElementById('det-sub').textContent=[a.species,a.breed,a.tag].filter(Boolean).join(' · ');
+  document.getElementById('det-tags').innerHTML=`
+    ${a.sex?`<span class="tag ${a.sex.startsWith('F')?'tag-purple':'tag-blue'}">${a.sex}</span>`:''}
+    <span class="tag ${a.health==='Good'?'tag-green':a.health==='Watch'?'tag-amber':'tag-red'}">${a.health||'Good'}</span>
+    ${a.pregnant==='Yes'?'<span class="tag tag-purple">Pregnant</span>':''}
+    ${a.status?`<span class="tag tag-brand">${a.status}</span>`:''}
+  `;
+  document.getElementById('det-actions').innerHTML=`
+    <button class="det-btn primary" onclick="openEditAnimal()"><i class="ti ti-edit"></i>Edit</button>
+    <button class="det-btn green" onclick="openMedSheet()"><i class="ti ti-stethoscope"></i>Medical</button>
+    <button class="det-btn" onclick="openBreedSheet()"><i class="ti ti-heart"></i>Breeding</button>
+    <button class="det-btn" onclick="openFeedSheet()"><i class="ti ti-scale"></i>Weight</button>
+    <button class="det-btn danger" onclick="deleteAnimal()"><i class="ti ti-trash"></i>Delete</button>
+  `;
+  const med=S.medical.filter(m=>m.animalId===id).sort((a,b)=>b.date.localeCompare(a.date));
+  const brd=S.breeding.filter(b=>b.animalId===id).sort((a,b)=>b.date.localeCompare(a.date));
+  const fds=S.feed.filter(f=>f.animalId===id).sort((a,b)=>b.date.localeCompare(a.date));
+  const milks=S.milk.filter(m=>m.animalId===id).sort((a,b)=>b.date.localeCompare(a.date));
+  document.getElementById('det-content').innerHTML=`
+    <div class="card" style="margin-bottom:10px">
+      <div class="card-header"><div class="card-header-left"><i class="ti ti-info-circle"></i>Profile</div></div>
+      ${a.dob?`<div class="card-row"><span class="card-key">Born</span><span class="card-val">${fmt(a.dob)} (${calcAge(a.dob)})</span></div>`:''}
+      ${a.color?`<div class="card-row"><span class="card-key">Color</span><span class="card-val">${a.color}</span></div>`:''}
+      ${a.weight?`<div class="card-row"><span class="card-key">Weight</span><span class="card-val">${a.weight} lbs</span></div>`:''}
+      ${a.sire?`<div class="card-row"><span class="card-key">Sire</span><span class="card-val">${a.sire}</span></div>`:''}
+      ${a.dam?`<div class="card-row"><span class="card-key">Dam</span><span class="card-val">${a.dam}</span></div>`:''}
+      ${a.pregnant==='Yes'&&a.due?`<div class="card-row"><span class="card-key">Due Date</span><span class="card-val" style="color:var(--purple)">${fmt(a.due)}</span></div>`:''}
+      ${a.notes?`<div class="card-row" style="flex-direction:column;gap:4px"><span class="card-key">Notes</span><span style="font-size:13px;color:var(--text2);line-height:1.5">${a.notes}</span></div>`:''}
+    </div>
+    <div class="card" style="margin-bottom:10px">
+      <div class="card-header"><div class="card-header-left"><i class="ti ti-stethoscope"></i>Medical Records</div></div>
+      ${med.length?med.map(m=>`<div class="list-item"><div style="display:flex;justify-content:space-between;align-items:flex-start"><div class="list-item-sub">${fmt(m.date)}</div><button onclick="deleteMedical('${m.id}')" style="background:none;border:none;color:var(--text3);font-size:16px;cursor:pointer"><i class="ti ti-trash"></i></button></div><div class="list-item-title">${m.type}${m.provider?' — '+m.provider:''}</div>${m.dose?`<div class="list-item-note">Dose: ${m.dose}</div>`:''} ${m.next?`<div class="list-item-note" style="color:var(--amber)">Next: ${fmt(m.next)}</div>`:''} ${m.notes?`<div class="list-item-note">${m.notes}</div>`:''}</div>`).join(''):`<div class="list-item" style="color:var(--text3);font-size:13px">No records yet</div>`}
+      <button class="add-row-btn" onclick="openMedSheet()"><i class="ti ti-plus"></i>Add Medical Record</button>
+    </div>
+    <div class="card" style="margin-bottom:10px">
+      <div class="card-header"><div class="card-header-left"><i class="ti ti-heart"></i>Breeding</div></div>
+      ${brd.length?brd.map(b=>`<div class="list-item"><div style="display:flex;justify-content:space-between;align-items:flex-start"><div class="list-item-sub">${fmt(b.date)}</div><button onclick="deleteBreeding('${b.id}')" style="background:none;border:none;color:var(--text3);font-size:16px;cursor:pointer"><i class="ti ti-trash"></i></button></div><div class="list-item-title">${b.sire?'Bred to '+b.sire:'Breeding'} — <span style="color:var(--green)">${b.outcome}</span></div>${b.due?`<div class="list-item-note">Due: ${fmt(b.due)}</div>`:''} ${b.offspring?`<div class="list-item-note">Offspring: ${b.offspring}</div>`:''} ${b.notes?`<div class="list-item-note">${b.notes}</div>`:''}</div>`).join(''):`<div class="list-item" style="color:var(--text3);font-size:13px">No records yet</div>`}
+      <button class="add-row-btn" onclick="openBreedSheet()"><i class="ti ti-plus"></i>Add Breeding Record</button>
+    </div>
+    <div class="card" style="margin-bottom:10px">
+      <div class="card-header"><div class="card-header-left"><i class="ti ti-scale"></i>Weight & Feed</div></div>
+      ${fds.length?fds.slice(0,5).map(f=>`<div class="list-item"><div style="display:flex;justify-content:space-between;align-items:flex-start"><div class="list-item-sub">${fmt(f.date)}</div><button onclick="deleteFeedLog('${f.id}')" style="background:none;border:none;color:var(--text3);font-size:16px;cursor:pointer"><i class="ti ti-trash"></i></button></div>${f.weight?`<div class="list-item-title">Weight: ${f.weight} lbs</div>`:''} ${f.feed?`<div class="list-item-note">${f.feed}${f.amount?' · '+f.amount+' lbs/day':''}</div>`:''} ${f.notes?`<div class="list-item-note">${f.notes}</div>`:''}</div>`).join(''):`<div class="list-item" style="color:var(--text3);font-size:13px">No logs yet</div>`}
+      <button class="add-row-btn" onclick="openFeedSheet()"><i class="ti ti-plus"></i>Log Weight / Feed</button>
+    </div>
+    ${a.species==='Goat'||a.species==='Sheep'||a.species==='Cattle'?`
+    <div class="card" style="margin-bottom:10px">
+      <div class="card-header"><div class="card-header-left"><i class="ti ti-droplet"></i>Milk Log</div></div>
+      ${milks.length?milks.slice(0,5).map(m=>`<div class="milk-row"><span class="milk-date">${fmt(m.date)}</span><span class="milk-animal">${m.session||'AM'}</span><span class="milk-qty">${m.qty} oz</span><button onclick="deleteMilkLog('${m.id}')" style="background:none;border:none;color:var(--text3);font-size:15px;cursor:pointer;padding:0 0 0 6px"><i class="ti ti-trash"></i></button></div>`).join(''):`<div class="list-item" style="color:var(--text3);font-size:13px">No milk logs for this animal</div>`}
+      <button class="add-row-btn" onclick="openMilkSheetForAnimal('${id}')"><i class="ti ti-plus"></i>Log Milk</button>
+    </div>`:''}
+  `;
+}
+
+// ── ANIMAL FORM ──
+let photoDataUrl=null;
+
+function resetAnimalForm(){
+  photoDataUrl=null;
+  ['f-name','f-tag','f-breed','f-color','f-notes','f-sire','f-dam','f-weight','f-due','f-species-custom'].forEach(id=>{ const e=document.getElementById(id); if(e) e.value=''; });
+  ['f-species','f-sex','f-health','f-status','f-pregnant'].forEach(id=>{ const e=document.getElementById(id); if(e) e.selectedIndex=0; });
+  document.getElementById('f-species-custom').style.display='none';
+  document.getElementById('f-due-group').style.display='none';
+  document.getElementById('f-id').value='';
+  document.getElementById('f-photo-data').value='';
+  document.getElementById('f-health').value='Good';
+  document.getElementById('f-status').value='Active';
+  document.getElementById('photo-area').innerHTML='<i class="ti ti-camera"></i><div class="photo-upload-text">Tap to take photo or upload</div>';
+  document.getElementById('animal-sheet-title').textContent='Add Animal';
+}
+
+function openEditAnimal(){
+  const a=S.animals.find(x=>x.id===currentAnimalId); if(!a) return;
+  resetAnimalForm();
+  photoDataUrl=a.photo||null;
+  document.getElementById('f-name').value=a.name||'';
+  document.getElementById('f-tag').value=a.tag||'';
+  setSpecies(a.species||'');
+  document.getElementById('f-breed').value=a.breed||'';
+  document.getElementById('f-sex').value=a.sex||'';
+  document.getElementById('f-dob').value=a.dob||'';
+  document.getElementById('f-color').value=a.color||'';
+  document.getElementById('f-health').value=a.health||'Good';
+  document.getElementById('f-weight').value=a.weight||'';
+  document.getElementById('f-sire').value=a.sire||'';
+  document.getElementById('f-dam').value=a.dam||'';
+  document.getElementById('f-status').value=a.status||'Active';
+  document.getElementById('f-pregnant').value=a.pregnant||'No';
+  document.getElementById('f-due').value=a.due||'';
+  document.getElementById('f-due-group').style.display=a.pregnant==='Yes'?'block':'none';
+  document.getElementById('f-notes').value=a.notes||'';
+  document.getElementById('f-id').value=a.id;
+  document.getElementById('f-photo-data').value=a.photo||'';
+  document.getElementById('animal-sheet-title').textContent='Edit '+a.name;
+  if(a.photo) document.getElementById('photo-area').innerHTML=`<img src="${a.photo}" class="photo-preview"><div class="photo-upload-text" style="font-size:12px">Tap to change</div>`;
+  openSheet('animal-sheet');
+}
+
+function toggleDue(sel){ document.getElementById('f-due-group').style.display=sel.value==='Yes'?'block':'none'; }
+
+function handlePhoto(e){
+  const f=e.target.files[0]; if(!f) return;
+  const r=new FileReader(); r.onload=ev=>{
+    // Resize/compress before storing so a full-resolution phone photo doesn't
+    // bloat the database or slow down syncing between phones.
+    const img=new Image();
+    img.onload=()=>{
+      const maxDim=900;
+      const scale=Math.min(1, maxDim/Math.max(img.width,img.height));
+      const w=Math.round(img.width*scale), h=Math.round(img.height*scale);
+      const canvas=document.createElement('canvas'); canvas.width=w; canvas.height=h;
+      canvas.getContext('2d').drawImage(img,0,0,w,h);
+      photoDataUrl=canvas.toDataURL('image/jpeg',0.75);
+      document.getElementById('photo-area').innerHTML=`<img src="${photoDataUrl}" class="photo-preview"><div class="photo-upload-text" style="font-size:12px">Tap to change</div>`;
+    };
+    img.onerror=()=>{ photoDataUrl=ev.target.result; document.getElementById('photo-area').innerHTML=`<img src="${photoDataUrl}" class="photo-preview"><div class="photo-upload-text" style="font-size:12px">Tap to change</div>`; };
+    img.src=ev.target.result;
+  }; r.readAsDataURL(f);
+}
+
+function saveAnimal(){
+  const name=document.getElementById('f-name').value.trim(), species=getSpecies();
+  if(!name||!species){ toast('Name and species required'); return; }
+  const editId=document.getElementById('f-id').value;
+  const data={id:editId||uid(),name,species,tag:document.getElementById('f-tag').value.trim(),breed:document.getElementById('f-breed').value.trim(),sex:document.getElementById('f-sex').value,dob:document.getElementById('f-dob').value,color:document.getElementById('f-color').value.trim(),health:document.getElementById('f-health').value,weight:document.getElementById('f-weight').value,sire:document.getElementById('f-sire').value.trim(),dam:document.getElementById('f-dam').value.trim(),status:document.getElementById('f-status').value,pregnant:document.getElementById('f-pregnant').value,due:document.getElementById('f-due').value,notes:document.getElementById('f-notes').value.trim(),photo:photoDataUrl||document.getElementById('f-photo-data').value||null,created:editId?(S.animals.find(a=>a.id===editId)?.created||Date.now()):Date.now()};
+  if(editId){ const i=S.animals.findIndex(a=>a.id===editId); if(i>-1) S.animals[i]=data; } else S.animals.push(data);
+  saveState(); closeSheet('animal-sheet'); toast(editId?'Animal updated':'Animal added');
+  if(editId&&currentAnimalId===editId) openDetail(editId);
+  renderAnimals(); renderHome();
+}
+
+function deleteAnimal(){
+  const a=S.animals.find(x=>x.id===currentAnimalId);
+  if(!confirm(`Delete ${a?.name}? All records will be removed.`)) return;
+  ['animals','medical','breeding','feed','milk'].forEach(k=>{ S[k]=S[k].filter(x=>x.id!==currentAnimalId&&x.animalId!==currentAnimalId); });
+  saveState(); goBack(); toast('Animal deleted'); renderAnimals(); renderHome();
+}
+
+// ── MEDICAL ──
+function openMedSheet(){
+  document.getElementById('m-animal-id').value=currentAnimalId||'';
+  const a=currentAnimalId?S.animals.find(x=>x.id===currentAnimalId):null;
+  document.getElementById('med-sheet-title').textContent=a?`Medical: ${a.name}`:'Medical Record';
+  ['m-provider','m-dose','m-notes','m-weight'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('m-type').selectedIndex=0;
+  document.getElementById('m-date').value=today();
+  document.getElementById('m-next').value='';
+  openSheet('medical-sheet');
+}
+function saveMedical(){
+  const date=document.getElementById('m-date').value, type=document.getElementById('m-type').value;
+  if(!date||!type){ toast('Date and type required'); return; }
+  const rec={id:uid(),animalId:document.getElementById('m-animal-id').value,type,date,provider:document.getElementById('m-provider').value.trim(),dose:document.getElementById('m-dose').value.trim(),next:document.getElementById('m-next').value,weight:document.getElementById('m-weight').value,notes:document.getElementById('m-notes').value.trim()};
+  S.medical.push(rec);
+  if(rec.next&&rec.animalId){ const a=S.animals.find(x=>x.id===rec.animalId); S.reminders.push({id:uid(),title:`${type} due — ${a?.name||''}`,type:'medical',animalId:rec.animalId,due:rec.next,notes:'Auto-created from medical record',created:Date.now()}); }
+  if(rec.weight&&rec.animalId){ const i=S.animals.findIndex(a=>a.id===rec.animalId); if(i>-1) S.animals[i].weight=rec.weight; }
+  saveState(); closeSheet('medical-sheet'); toast('Medical record saved');
+  if(currentAnimalId) openDetail(currentAnimalId);
+}
+
+// ── BREEDING ──
+function openBreedSheet(){
+  document.getElementById('b-animal-id').value=currentAnimalId||'';
+  ['b-sire','b-offspring','b-notes'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('b-date').value=today(); document.getElementById('b-due').value='';
+  document.getElementById('b-method').selectedIndex=0; document.getElementById('b-outcome').selectedIndex=0;
+  openSheet('breeding-sheet');
+}
+function saveBreeding(){
+  const date=document.getElementById('b-date').value; if(!date){ toast('Date required'); return; }
+  const rec={id:uid(),animalId:document.getElementById('b-animal-id').value,date,sire:document.getElementById('b-sire').value.trim(),due:document.getElementById('b-due').value,method:document.getElementById('b-method').value,outcome:document.getElementById('b-outcome').value,offspring:document.getElementById('b-offspring').value.trim(),notes:document.getElementById('b-notes').value.trim()};
+  S.breeding.push(rec);
+  if(rec.due&&rec.animalId){ const i=S.animals.findIndex(a=>a.id===rec.animalId); if(i>-1){S.animals[i].pregnant='Yes';S.animals[i].due=rec.due;} const a=S.animals.find(x=>x.id===rec.animalId); S.reminders.push({id:uid(),title:`Due date — ${a?.name||''}`,type:'breeding',animalId:rec.animalId,due:rec.due,notes:'Auto-created from breeding record',created:Date.now()}); }
+  saveState(); closeSheet('breeding-sheet'); toast('Breeding record saved');
+  if(currentAnimalId) openDetail(currentAnimalId);
+}
+
+// ── FEED ──
+function openFeedSheet(){
+  document.getElementById('fw-animal-id').value=currentAnimalId||'';
+  ['fw-weight','fw-feed','fw-amount','fw-notes'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('fw-date').value=today();
+  openSheet('feed-sheet');
+}
+function saveFeed(){
+  const rec={id:uid(),animalId:document.getElementById('fw-animal-id').value,date:document.getElementById('fw-date').value,weight:document.getElementById('fw-weight').value,feed:document.getElementById('fw-feed').value.trim(),amount:document.getElementById('fw-amount').value,notes:document.getElementById('fw-notes').value.trim()};
+  S.feed.push(rec);
+  if(rec.weight&&rec.animalId){ const i=S.animals.findIndex(a=>a.id===rec.animalId); if(i>-1) S.animals[i].weight=rec.weight; }
+  saveState(); closeSheet('feed-sheet'); toast('Log saved');
+  if(currentAnimalId) openDetail(currentAnimalId);
+}
+
+// ═══════════════════════════════════════════════════
+// MILK & PRODUCTS
+// ═══════════════════════════════════════════════════
+let milkTab='milk';
+
+function milkSeg(tab){
+  milkTab=tab;
+  document.querySelectorAll('#page-milk .seg-btn').forEach((b,i)=>b.classList.toggle('active',['milk','products','sales'][i]===tab));
+  if(tab==='milk') renderMilk('milk');
+  if(tab==='products') renderProducts();
+  if(tab==='sales') renderSales('product');
+}
+
+function renderMilk(){
+  const milkAnimals=S.animals.filter(a=>['Goat','Sheep','Cattle'].includes(a.species));
+  const logs=[...S.milk].sort((a,b)=>b.date.localeCompare(a.date));
+  const totalToday=S.milk.filter(m=>m.date===today()).reduce((s,m)=>s+(+m.qty||0),0);
+  document.getElementById('milk-section').innerHTML=`
+    <div style="padding:0 16px 8px;display:flex;justify-content:space-between;align-items:center">
+      <div><div style="font-size:22px;font-weight:700;color:var(--brand)">${totalToday} oz</div><div style="font-size:12px;color:var(--text3)">Total today</div></div>
+      <button class="btn-add" onclick="openMilkSheet()"><i class="ti ti-plus"></i>Log Milk</button>
+    </div>
+    <div class="card">
+      <div class="card-header"><div class="card-header-left"><i class="ti ti-droplet"></i>Milk Log</div></div>
+      ${logs.length?logs.slice(0,30).map(m=>{ const a=S.animals.find(x=>x.id===m.animalId); return `<div class="milk-row"><span class="milk-date">${fmt(m.date)}</span><span class="milk-animal">${a?a.name:'Unknown'} · ${m.session||'AM'}</span><span class="milk-qty">${m.qty} oz</span></div>`; }).join(''):`<div class="list-item" style="color:var(--text3);font-size:13px">No milk logs yet</div>`}
+    </div>
+  `;
+}
+
+function renderProducts(){
+  document.getElementById('milk-section').innerHTML=`
+    <div style="padding:0 16px 8px;display:flex;justify-content:space-between;align-items:center;margin-top:4px">
+      <div class="page-title" style="font-size:18px">Products</div>
+      <button class="btn-add" onclick="openProductSheet()"><i class="ti ti-plus"></i>Add</button>
+    </div>
+    ${S.products.length?S.products.map(p=>`
+      <div class="card" style="margin-bottom:10px">
+        <div class="card-header">
+          <div class="card-header-left"><i class="ti ti-bottle"></i>${p.name}</div>
+          <div style="display:flex;gap:6px;align-items:center">
+            <span class="tag tag-brand">${p.cat}</span>
+            <button onclick="editProduct('${p.id}')" style="background:none;border:none;color:var(--text3);font-size:16px;cursor:pointer"><i class="ti ti-edit"></i></button>
+            <button onclick="deleteProduct('${p.id}')" style="background:none;border:none;color:var(--text3);font-size:16px;cursor:pointer"><i class="ti ti-trash"></i></button>
+          </div>
+        </div>
+        <div class="card-row"><span class="card-key">Batch Date</span><span class="card-val">${fmt(p.date)}</span></div>
+        <div class="card-row"><span class="card-key">On Hand</span><span class="card-val" style="color:${+p.onhand<3?'var(--red)':'var(--green)'};font-weight:700">${p.onhand} units</span></div>
+        <div class="card-row"><span class="card-key">Made / Price</span><span class="card-val">${p.made} made · $${(+p.price||0).toFixed(2)} each</span></div>
+        ${p.milk?`<div class="card-row"><span class="card-key">Milk Used</span><span class="card-val">${p.milk} oz</span></div>`:''}
+        ${p.recipe?`<div class="card-row" style="flex-direction:column;gap:4px"><span class="card-key">Recipe</span><span style="font-size:13px;color:var(--text2)">${p.recipe}</span></div>`:''}
+      </div>`).join(''):`<div class="empty-state"><div class="empty-icon">🧴</div><div class="empty-text">No products yet</div><div class="empty-sub">Add a soap, lotion, or other batch</div></div>`}
+  `;
+}
+
+function renderSales(context){
+  const type=context==='product'?'product':'meat';
+  const sales=[...S.sales].filter(s=>!context||s.type===type).sort((a,b)=>b.date.localeCompare(a.date));
+  const total=sales.reduce((s,x)=>s+(+x.amount||0),0);
+  document.getElementById(context==='product'?'milk-section':'butcher-section').innerHTML=`
+    <div style="padding:0 16px 8px;display:flex;justify-content:space-between;align-items:center;margin-top:4px">
+      <div><div style="font-size:22px;font-weight:700;color:var(--green)">$${total.toFixed(2)}</div><div style="font-size:12px;color:var(--text3)">${sales.length} sale${sales.length!==1?'s':''}</div></div>
+      <button class="btn-add" onclick="openSaleSheet('${type}')"><i class="ti ti-plus"></i>Add Sale</button>
+    </div>
+    <div class="card">
+      <div class="card-header"><div class="card-header-left"><i class="ti ti-cash"></i>Sales Records</div></div>
+      ${sales.length?sales.map(s=>`<div class="list-item"><div class="list-item-sub">${fmt(s.date)}${s.buyer?' · '+s.buyer:''}</div><div class="list-item-title">${s.item}</div><div style="display:flex;justify-content:space-between;align-items:center"><span class="list-item-note">${s.notes||''}</span><div style="display:flex;align-items:center;gap:8px"><span style="font-weight:700;color:var(--green)">$${(+s.amount||0).toFixed(2)}</span><button onclick="deleteSale('${s.id}')" style="background:none;border:none;color:var(--text3);font-size:16px;cursor:pointer"><i class="ti ti-trash"></i></button></div></div></div>`).join(''):`<div class="list-item" style="color:var(--text3);font-size:13px">No sales yet</div>`}
+    </div>
+  `;
+}
+
+function openMilkSheet(){
+  const sel=document.getElementById('ml-animal');
+  const dairyAnimals=S.animals.filter(a=>['Goat','Sheep','Cattle'].includes(a.species));
+  sel.innerHTML='<option value="">Select animal…</option>'+dairyAnimals.map(a=>`<option value="${a.id}">${a.name}</option>`).join('');
+  document.getElementById('ml-date').value=today();
+  document.getElementById('ml-qty').value='';
+  document.getElementById('ml-notes').value='';
+  document.getElementById('ml-session').selectedIndex=0;
+  openSheet('milk-sheet');
+}
+
+function openMilkSheetForAnimal(id){
+  openMilkSheet();
+  document.getElementById('ml-animal').value=id;
+}
+
+function saveMilkLog(){
+  const animalId=document.getElementById('ml-animal').value, qty=document.getElementById('ml-qty').value, date=document.getElementById('ml-date').value;
+  if(!qty||!date){ toast('Date and quantity required'); return; }
+  S.milk.push({id:uid(),animalId,date,qty,session:document.getElementById('ml-session').value,notes:document.getElementById('ml-notes').value.trim()});
+  saveState(); closeSheet('milk-sheet'); toast('Milk logged');
+  milkSeg(milkTab); renderHome();
+  if(currentAnimalId&&currentAnimalId===animalId) openDetail(currentAnimalId);
+}
+
+function openProductSheet(){ document.getElementById('prod-sheet-title').textContent='Add Product'; ['p-name','p-recipe','p-notes','p-milk','p-cost','p-price'].forEach(id=>document.getElementById(id).value=''); document.getElementById('p-made').value=''; document.getElementById('p-onhand').value=''; document.getElementById('p-date').value=today(); document.getElementById('p-cat').selectedIndex=0; document.getElementById('p-id').value=''; openSheet('product-sheet'); }
+function editProduct(id){ const p=S.products.find(x=>x.id===id); if(!p) return; document.getElementById('p-name').value=p.name||''; document.getElementById('p-cat').value=p.cat||'Soap'; document.getElementById('p-date').value=p.date||''; document.getElementById('p-made').value=p.made||''; document.getElementById('p-onhand').value=p.onhand||''; document.getElementById('p-cost').value=p.cost||''; document.getElementById('p-price').value=p.price||''; document.getElementById('p-milk').value=p.milk||''; document.getElementById('p-recipe').value=p.recipe||''; document.getElementById('p-notes').value=p.notes||''; document.getElementById('p-id').value=p.id; document.getElementById('prod-sheet-title').textContent='Edit Product'; openSheet('product-sheet'); }
+function saveProduct(){ const name=document.getElementById('p-name').value.trim(); if(!name){toast('Name required');return;} const editId=document.getElementById('p-id').value; const p={id:editId||uid(),name,cat:document.getElementById('p-cat').value,date:document.getElementById('p-date').value,made:document.getElementById('p-made').value,onhand:document.getElementById('p-onhand').value,cost:document.getElementById('p-cost').value,price:document.getElementById('p-price').value,milk:document.getElementById('p-milk').value,recipe:document.getElementById('p-recipe').value.trim(),notes:document.getElementById('p-notes').value.trim()}; if(editId){const i=S.products.findIndex(x=>x.id===editId);if(i>-1)S.products[i]=p;}else S.products.push(p); saveState(); closeSheet('product-sheet'); toast(editId?'Product updated':'Product added'); renderProducts(); }
+
+function openSaleSheet(type){ document.getElementById('sl-type').value=type||'product'; ['sl-item','sl-buyer','sl-notes'].forEach(id=>document.getElementById(id).value=''); document.getElementById('sl-date').value=today(); document.getElementById('sl-amount').value=''; openSheet('sale-sheet'); }
+function saveSale(){ const item=document.getElementById('sl-item').value.trim(),amount=document.getElementById('sl-amount').value; if(!item){toast('Item required');return;} S.sales.push({id:uid(),type:document.getElementById('sl-type').value,item,date:document.getElementById('sl-date').value,amount,buyer:document.getElementById('sl-buyer').value.trim(),notes:document.getElementById('sl-notes').value.trim()}); saveState(); closeSheet('sale-sheet'); toast('Sale recorded'); milkSeg(milkTab); butcherSeg(butcherTab); }
+
+// ═══════════════════════════════════════════════════
+// BUTCHER & FREEZER
+// ═══════════════════════════════════════════════════
+let butcherTab='records';
+
+function butcherSeg(tab){
+  butcherTab=tab;
+  document.querySelectorAll('#page-butcher .seg-btn').forEach((b,i)=>b.classList.toggle('active',['records','freezer','sales'][i]===tab));
+  if(tab==='records') renderButcher('records');
+  if(tab==='freezer') renderFreezer();
+  if(tab==='sales') renderSales('meat');
+}
+
+function renderButcher(){
+  const bks=[...S.butcher].sort((a,b)=>b.date.localeCompare(a.date));
+  document.getElementById('butcher-section').innerHTML=`
+    <div style="padding:0 16px 8px;display:flex;justify-content:space-between;align-items:center;margin-top:4px">
+      <div><div style="font-size:22px;font-weight:700;color:var(--brand)">${bks.length}</div><div style="font-size:12px;color:var(--text3)">Butcher records</div></div>
+      <button class="btn-add" onclick="openButcherSheet()"><i class="ti ti-plus"></i>Add</button>
+    </div>
+    ${bks.length?bks.map(b=>{ const a=S.animals.find(x=>x.id===b.animalId); return `<div class="card" style="margin-bottom:10px"><div class="card-header"><div class="card-header-left"><i class="ti ti-meat"></i>${a?a.name:b.animalName||'Unknown'}</div><div style="display:flex;gap:6px;align-items:center"><span class="tag tag-brand">${fmt(b.date)}</span><button onclick="deleteButcher('${b.id}')" style="background:none;border:none;color:var(--text3);font-size:16px;cursor:pointer"><i class="ti ti-trash"></i></button></div></div>${b.live?`<div class="card-row"><span class="card-key">Live Weight</span><span class="card-val">${b.live} lbs</span></div>`:''} ${b.hang?`<div class="card-row"><span class="card-key">Hanging Weight</span><span class="card-val">${b.hang} lbs</span></div>`:''} ${b.processed?`<div class="card-row"><span class="card-key">Processed</span><span class="card-val">${b.processed} lbs</span></div>`:''} <div class="card-row"><span class="card-key">Purpose</span><span class="card-val">${b.purpose}</span></div>${b.cuts?`<div class="card-row" style="flex-direction:column;gap:4px"><span class="card-key">Cuts</span><span style="font-size:13px;color:var(--text2)">${b.cuts}</span></div>`:''} ${b.notes?`<div class="card-row" style="flex-direction:column;gap:4px"><span class="card-key">Notes</span><span style="font-size:13px;color:var(--text2)">${b.notes}</span></div>`:''}</div>`; }).join(''):`<div class="empty-state"><div class="empty-icon">🥩</div><div class="empty-text">No butcher records yet</div></div>`}
+  `;
+}
+
+function renderFreezer(){
+  const items=S.freezer;
+  const lowCount=items.filter(i=>i.low&&(+i.qty||0)<=(+i.low||0)).length;
+  document.getElementById('butcher-section').innerHTML=`
+    <div style="padding:0 16px 8px;display:flex;justify-content:space-between;align-items:center;margin-top:4px">
+      <div><div style="font-size:22px;font-weight:700;color:var(--brand)">${items.length} items</div><div style="font-size:12px;color:${lowCount?'var(--red)':'var(--text3)'}">${lowCount?lowCount+' running low':'All stocked'}</div></div>
+      <button class="btn-add" onclick="openFreezerSheet()"><i class="ti ti-plus"></i>Add</button>
+    </div>
+    <div class="card">
+      <div class="card-header"><div class="card-header-left"><i class="ti ti-snowflake"></i>Freezer Inventory</div></div>
+      ${items.length?items.map(f=>`<div class="freezer-item">
+        <div class="freezer-name">${f.name}${f.source?`<div style="font-size:11px;color:var(--text3)">${f.source}</div>`:''}</div>
+        <div style="text-align:right">
+          <div class="${(+f.qty||0)<=(+f.low||0)&&f.low?'freezer-low':'freezer-qty'}">${f.qty} ${f.unit}</div>
+          <div style="display:flex;gap:6px;justify-content:flex-end;margin-top:4px">
+            <button onclick="adjustFreezer('${f.id}',-1)" style="background:var(--red-pale);border:1px solid #F09595;border-radius:6px;color:var(--red);font-size:12px;padding:3px 8px;cursor:pointer;font-family:inherit">-1</button>
+            <button onclick="adjustFreezer('${f.id}',1)" style="background:var(--green-pale);border:1px solid #C0DD97;border-radius:6px;color:var(--green);font-size:12px;padding:3px 8px;cursor:pointer;font-family:inherit">+1</button>
+            <button onclick="editFreezer('${f.id}')" style="background:none;border:none;color:var(--text3);font-size:16px;cursor:pointer"><i class="ti ti-edit"></i></button>
+            <button onclick="deleteFreezerItem('${f.id}')" style="background:none;border:none;color:var(--text3);font-size:16px;cursor:pointer"><i class="ti ti-trash"></i></button>
+          </div>
+        </div>
+      </div>`).join(''):`<div class="list-item" style="color:var(--text3);font-size:13px">Freezer is empty</div>`}
+    </div>
+  `;
+}
+
+function openButcherSheet(){
+  const sel=document.getElementById('bk-animal');
+  sel.innerHTML='<option value="">Select animal…</option>'+S.animals.filter(a=>a.status==='Active'||a.status==='Breeding Stock').map(a=>`<option value="${a.id}">${a.name} (${a.species})</option>`).join('');
+  ['bk-live','bk-hang','bk-processed','bk-cuts','bk-processor','bk-notes'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('bk-date').value=today();
+  document.getElementById('bk-purpose').selectedIndex=0;
+  openSheet('butcher-sheet');
+}
+
+function saveButcher(){
+  const date=document.getElementById('bk-date').value; if(!date){toast('Date required');return;}
+  const animalId=document.getElementById('bk-animal').value;
+  const a=animalId?S.animals.find(x=>x.id===animalId):null;
+  const rec={id:uid(),animalId,animalName:a?a.name:'',date,live:document.getElementById('bk-live').value,hang:document.getElementById('bk-hang').value,processed:document.getElementById('bk-processed').value,purpose:document.getElementById('bk-purpose').value,cuts:document.getElementById('bk-cuts').value.trim(),processor:document.getElementById('bk-processor').value.trim(),notes:document.getElementById('bk-notes').value.trim()};
+  S.butcher.push(rec);
+  if(animalId){ const i=S.animals.findIndex(x=>x.id===animalId); if(i>-1) S.animals[i].status='Deceased'; }
+  saveState(); closeSheet('butcher-sheet'); toast('Butcher record saved'); renderButcher(); renderAnimals();
+}
+
+function openFreezerSheet(id){
+  document.getElementById('frz-title').textContent=id?'Edit Freezer Item':'Add Freezer Item';
+  if(id){ const f=S.freezer.find(x=>x.id===id); if(f){ document.getElementById('fz-name').value=f.name||''; document.getElementById('fz-qty').value=f.qty||''; document.getElementById('fz-unit').value=f.unit||'lbs'; document.getElementById('fz-source').value=f.source||''; document.getElementById('fz-low').value=f.low||''; document.getElementById('fz-notes').value=f.notes||''; document.getElementById('fz-id').value=f.id; } }
+  else { ['fz-name','fz-qty','fz-source','fz-low','fz-notes'].forEach(i=>document.getElementById(i).value=''); document.getElementById('fz-id').value=''; document.getElementById('fz-unit').selectedIndex=0; }
+  openSheet('freezer-sheet');
+}
+function editFreezer(id){ openFreezerSheet(id); }
+function adjustFreezer(id,delta){ const i=S.freezer.findIndex(x=>x.id===id); if(i>-1){ S.freezer[i].qty=Math.max(0,(+S.freezer[i].qty||0)+delta); saveState(); renderFreezer(); } }
+function saveFreezer(){ const name=document.getElementById('fz-name').value.trim(); if(!name){toast('Name required');return;} const editId=document.getElementById('fz-id').value; const f={id:editId||uid(),name,qty:document.getElementById('fz-qty').value,unit:document.getElementById('fz-unit').value,source:document.getElementById('fz-source').value.trim(),low:document.getElementById('fz-low').value,notes:document.getElementById('fz-notes').value.trim()}; if(editId){const i=S.freezer.findIndex(x=>x.id===editId);if(i>-1)S.freezer[i]=f;}else S.freezer.push(f); saveState(); closeSheet('freezer-sheet'); toast(editId?'Updated':'Added to freezer'); renderFreezer(); }
+
+// ═══════════════════════════════════════════════════
+// GARDEN
+// ═══════════════════════════════════════════════════
+let gardenTab='beds';
+
+const COMPANION_DATA={
+  'Tomatoes':{ good:['Basil','Carrots','Marigolds','Parsley','Garlic'], bad:['Fennel','Brassicas','Corn'], tip:'Basil repels aphids and improves flavor. Marigolds deter nematodes.' },
+  'Peppers':{ good:['Basil','Carrots','Onions','Tomatoes'], bad:['Fennel','Kohlrabi'], tip:'Basil repels aphids and spider mites.' },
+  'Cucumbers':{ good:['Beans','Dill','Marigolds','Nasturtiums','Sunflowers'], bad:['Potatoes','Sage','Melons'], tip:'Nasturtiums attract aphids away from cucumbers.' },
+  'Squash':{ good:['Beans','Corn','Nasturtiums','Radishes'], bad:['Potatoes','Fennel'], tip:'The Three Sisters (corn, beans, squash) work great together.' },
+  'Beans':{ good:['Carrots','Corn','Cucumbers','Marigolds','Squash'], bad:['Garlic','Onions','Fennel','Peppers'], tip:'Beans fix nitrogen in soil, benefiting neighbors.' },
+  'Corn':{ good:['Beans','Cucumbers','Squash','Sunflowers'], bad:['Tomatoes','Celery'], tip:'Plant with beans and squash for the Three Sisters method.' },
+  'Carrots':{ good:['Chives','Leeks','Lettuce','Onions','Rosemary','Tomatoes'], bad:['Dill','Parsnips'], tip:'Onions and rosemary deter carrot fly.' },
+  'Lettuce':{ good:['Carrots','Chives','Garlic','Radishes','Strawberries'], bad:['Celery','Parsley'], tip:'Tall plants provide shade that lettuce loves in summer.' },
+  'Garlic':{ good:['Roses','Tomatoes','Peppers','Lettuce','Carrots'], bad:['Beans','Peas'], tip:'Garlic deters aphids and many other pests.' },
+  'Basil':{ good:['Peppers','Tomatoes','Oregano'], bad:['Sage','Thyme'], tip:'The classic tomato companion — enhances flavor and repels pests.' },
+  'Marigolds':{ good:['Almost everything'], bad:['Beans'], tip:'Plant around the garden perimeter. Deters nematodes, aphids, and whitefly.' },
+  'Radishes':{ good:['Carrots','Lettuce','Spinach','Squash'], bad:['Hyssop'], tip:'Radishes deter cucumber beetles and can act as a trap crop.' },
+  'Potatoes':{ good:['Beans','Cabbage','Corn','Horseradish','Marigolds'], bad:['Cucumbers','Pumpkin','Sunflowers','Tomatoes'], tip:'Keep potatoes away from tomatoes — they share diseases.' },
+  'Onions':{ good:['Beets','Carrots','Lettuce','Strawberries','Tomatoes'], bad:['Beans','Peas','Sage'], tip:'Repel aphids, slugs, and carrot fly.' },
+  'Pumpkins':{ good:['Corn','Marigolds','Nasturtiums'], bad:['Potatoes'], tip:'Pumpkin leaves shade soil, reducing weeds.' },
+};
+
+function gardenSeg(tab){
+  gardenTab=tab;
+  document.querySelectorAll('#page-garden .seg-btn').forEach((b,i)=>b.classList.toggle('active',['beds','seeds','harvest','companion'][i]===tab));
+  if(tab==='beds') renderBeds();
+  if(tab==='seeds') renderSeeds();
+  if(tab==='harvest') renderHarvestLog();
+  if(tab==='companion') renderCompanion();
+}
+
+function renderBeds(){
+  document.getElementById('garden-section').innerHTML=`
+    <div style="padding:0 16px 8px;display:flex;justify-content:space-between;align-items:center;margin-top:4px">
+      <div><div style="font-size:22px;font-weight:700;color:var(--green)">${S.beds.length} beds</div><div style="font-size:12px;color:var(--text3)">${S.beds.reduce((s,b)=>{const p=(b.plants||'').split(',').filter(x=>x.trim());return s+p.length;},0)} plant types</div></div>
+      <button class="btn-add" style="background:var(--green)" onclick="openBedSheet()"><i class="ti ti-plus"></i>Add Bed</button>
+    </div>
+    ${S.beds.length?S.beds.map(b=>{ const plants=(b.plants||'').split(',').map(p=>p.trim()).filter(Boolean); return `<div class="garden-bed" onclick="editBed('${b.id}')">
+      <div class="bed-header"><span class="bed-icon">🌱</span><div style="flex:1"><div class="bed-name">${b.name}</div><div class="bed-count">${b.size||''} · ${plants.length} plants${b.planted?' · Planted '+fmt(b.planted):''}</div></div><button onclick="event.stopPropagation();deleteBed('${b.id}')" style="background:none;border:none;color:var(--text3);font-size:16px;cursor:pointer"><i class="ti ti-trash"></i></button></div>
+      ${plants.length?`<div class="bed-plants">${plants.map(p=>`<span class="plant-chip">${p}</span>`).join('')}</div>`:''}
+      ${b.companion?`<div class="companion-box"><strong>🌿 Companion notes</strong>${b.companion}</div>`:''}
+    </div>`; }).join(''):`<div class="empty-state"><div class="empty-icon">🌱</div><div class="empty-text">No garden beds yet</div><div class="empty-sub">Add your first bed or row</div></div>`}
+  `;
+}
+
+function renderSeeds(){
+  document.getElementById('garden-section').innerHTML=`
+    <div style="padding:0 16px 8px;display:flex;justify-content:space-between;align-items:center;margin-top:4px">
+      <div><div style="font-size:22px;font-weight:700;color:var(--green)">${S.seeds.length} varieties</div></div>
+      <button class="btn-add" style="background:var(--green)" onclick="openSeedSheet()"><i class="ti ti-plus"></i>Add Seeds</button>
+    </div>
+    <div class="card">
+      <div class="card-header"><div class="card-header-left"><i class="ti ti-plant-2"></i>Seed Inventory</div></div>
+      ${S.seeds.length?S.seeds.map(s=>`<div class="list-item" onclick="editSeed('${s.id}')">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start">
+          <div><div class="list-item-title">${s.name}</div><div class="list-item-sub">${[s.source,s.year].filter(Boolean).join(' · ')}${s.germ?' · '+s.germ+'% germ':''}</div></div>
+          <div style="display:flex;align-items:center;gap:8px"><span style="font-weight:700;color:var(--green);font-size:15px">${s.qty} ${s.unit}</span><button onclick="event.stopPropagation();deleteSeed('${s.id}')" style="background:none;border:none;color:var(--text3);font-size:16px;cursor:pointer"><i class="ti ti-trash"></i></button></div>
+        </div>
+        ${s.storage?`<div class="list-item-note">📦 ${s.storage}</div>`:''}
+      </div>`).join(''):`<div class="list-item" style="color:var(--text3);font-size:13px">No seeds in inventory</div>`}
+    </div>
+  `;
+}
+
+function renderHarvestLog(){
+  const hv=[...S.harvest].sort((a,b)=>b.date.localeCompare(a.date));
+  const byCrop={};
+  hv.forEach(h=>{ byCrop[h.crop]=(byCrop[h.crop]||0)+(+h.yield||0); });
+  document.getElementById('garden-section').innerHTML=`
+    <div style="padding:0 16px 8px;display:flex;justify-content:space-between;align-items:center;margin-top:4px">
+      <div><div style="font-size:22px;font-weight:700;color:var(--green)">${hv.length} logs</div></div>
+      <button class="btn-add" style="background:var(--green)" onclick="openHarvestSheet()"><i class="ti ti-plus"></i>Log Harvest</button>
+    </div>
+    ${Object.keys(byCrop).length?`<div class="card" style="margin-bottom:10px"><div class="card-header"><div class="card-header-left"><i class="ti ti-chart-bar"></i>Totals by Crop</div></div>${Object.entries(byCrop).map(([c,t])=>`<div class="card-row"><span class="card-key">${c}</span><span class="card-val" style="color:var(--green);font-weight:700">${t} lbs</span></div>`).join('')}</div>`:''}
+    <div class="card"><div class="card-header"><div class="card-header-left"><i class="ti ti-basket"></i>Harvest Log</div></div>
+      ${hv.length?hv.map(h=>`<div class="list-item"><div class="list-item-sub">${fmt(h.date)}${h.bed?' · '+h.bed:''}</div><div class="list-item-title">${h.crop} — ${h.yield} ${h.unit}</div><div style="display:flex;justify-content:space-between;align-items:center"><div style="display:flex;gap:8px"><span class="tag ${h.quality==='Excellent'?'tag-green':h.quality==='Good'?'tag-teal':h.quality==='Fair'?'tag-amber':'tag-red'}">${h.quality}</span>${h.notes?`<span class="list-item-note">${h.notes}</span>`:''}</div><button onclick="deleteHarvest('${h.id}')" style="background:none;border:none;color:var(--text3);font-size:16px;cursor:pointer"><i class="ti ti-trash"></i></button></div></div>`).join(''):`<div class="list-item" style="color:var(--text3);font-size:13px">No harvest logs yet</div>`}
+    </div>
+  `;
+}
+
+function renderCompanion(){
+  const crops=Object.keys(COMPANION_DATA);
+  document.getElementById('garden-section').innerHTML=`
+    <div style="padding:8px 16px 12px">
+      <div style="font-size:15px;font-weight:600;color:var(--text);margin-bottom:4px">Companion Planting Guide</div>
+      <div style="font-size:13px;color:var(--text3)">Tap a crop to see what grows well nearby — and what to keep apart.</div>
+    </div>
+    <div class="filter-chips">${crops.map(c=>`<div class="chip" onclick="showCompanion('${c}')" id="cc-${c.replace(/\s/g,'_')}">${c}</div>`).join('')}</div>
+    <div id="companion-detail"></div>
+  `;
+}
+
+function showCompanion(crop){
+  document.querySelectorAll('.filter-chips .chip').forEach(c=>c.classList.remove('active'));
+  const el=document.getElementById(`cc-${crop.replace(/\s/g,'_')}`); if(el) el.classList.add('active');
+  const d=COMPANION_DATA[crop]; if(!d) return;
+  document.getElementById('companion-detail').innerHTML=`
+    <div class="card" style="margin-bottom:10px">
+      <div class="card-header"><div class="card-header-left"><i class="ti ti-leaf"></i>${crop}</div></div>
+      <div style="padding:12px 14px">
+        <div style="font-size:12px;font-weight:700;color:var(--green);letter-spacing:0.5px;text-transform:uppercase;margin-bottom:6px">✅ Good Neighbors</div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px">${d.good.map(g=>`<span class="tag tag-green">${g}</span>`).join('')}</div>
+        <div style="font-size:12px;font-weight:700;color:var(--red);letter-spacing:0.5px;text-transform:uppercase;margin-bottom:6px">❌ Keep Away</div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px">${d.bad.map(b=>`<span class="tag tag-red">${b}</span>`).join('')}</div>
+        <div style="background:var(--teal-pale);border:1px solid #9FE1CB;border-radius:var(--radius-sm);padding:10px 12px;font-size:13px;color:var(--teal)"><strong style="display:block;margin-bottom:3px;font-size:11px;letter-spacing:0.5px;text-transform:uppercase">💡 Tip</strong>${d.tip}</div>
+      </div>
+    </div>
+  `;
+}
+
+function openBedSheet(id){ document.getElementById('bed-title').textContent=id?'Edit Bed':'Add Garden Bed'; if(id){const b=S.beds.find(x=>x.id===id);if(b){document.getElementById('bd-name').value=b.name||'';document.getElementById('bd-size').value=b.size||'';document.getElementById('bd-soil').value=b.soil||'';document.getElementById('bd-plants').value=b.plants||'';document.getElementById('bd-planted').value=b.planted||'';document.getElementById('bd-harvest').value=b.harvest||'';document.getElementById('bd-companion').value=b.companion||'';document.getElementById('bd-notes').value=b.notes||'';document.getElementById('bd-id').value=b.id;}}else{['bd-name','bd-size','bd-soil','bd-plants','bd-planted','bd-harvest','bd-companion','bd-notes'].forEach(i=>document.getElementById(i).value='');document.getElementById('bd-id').value='';} openSheet('bed-sheet'); }
+function editBed(id){ openBedSheet(id); }
+function saveBed(){ const name=document.getElementById('bd-name').value.trim();if(!name){toast('Bed name required');return;} const editId=document.getElementById('bd-id').value; const b={id:editId||uid(),name,size:document.getElementById('bd-size').value.trim(),soil:document.getElementById('bd-soil').value.trim(),plants:document.getElementById('bd-plants').value.trim(),planted:document.getElementById('bd-planted').value,harvest:document.getElementById('bd-harvest').value,companion:document.getElementById('bd-companion').value.trim(),notes:document.getElementById('bd-notes').value.trim()}; if(editId){const i=S.beds.findIndex(x=>x.id===editId);if(i>-1)S.beds[i]=b;}else S.beds.push(b); saveState(); closeSheet('bed-sheet'); toast(editId?'Bed updated':'Bed added'); renderBeds(); }
+
+function openSeedSheet(id){ document.getElementById('seed-title').textContent=id?'Edit Seeds':'Add Seeds'; if(id){const s=S.seeds.find(x=>x.id===id);if(s){document.getElementById('sd-name').value=s.name||'';document.getElementById('sd-qty').value=s.qty||'';document.getElementById('sd-unit').value=s.unit||'seeds';document.getElementById('sd-source').value=s.source||'';document.getElementById('sd-year').value=s.year||'';document.getElementById('sd-germ').value=s.germ||'';document.getElementById('sd-storage').value=s.storage||'';document.getElementById('sd-notes').value=s.notes||'';document.getElementById('sd-id').value=s.id;}}else{['sd-name','sd-qty','sd-source','sd-year','sd-germ','sd-storage','sd-notes'].forEach(i=>document.getElementById(i).value='');document.getElementById('sd-id').value='';document.getElementById('sd-unit').selectedIndex=0;} openSheet('seed-sheet'); }
+function editSeed(id){ openSeedSheet(id); }
+function saveSeed(){ const name=document.getElementById('sd-name').value.trim();if(!name){toast('Plant name required');return;} const editId=document.getElementById('sd-id').value; const s={id:editId||uid(),name,qty:document.getElementById('sd-qty').value,unit:document.getElementById('sd-unit').value,source:document.getElementById('sd-source').value.trim(),year:document.getElementById('sd-year').value,germ:document.getElementById('sd-germ').value,storage:document.getElementById('sd-storage').value.trim(),notes:document.getElementById('sd-notes').value.trim()}; if(editId){const i=S.seeds.findIndex(x=>x.id===editId);if(i>-1)S.seeds[i]=s;}else S.seeds.push(s); saveState(); closeSheet('seed-sheet'); toast(editId?'Updated':'Seed added'); renderSeeds(); }
+
+function openHarvestSheet(){ ['hv-crop','hv-yield','hv-bed','hv-notes'].forEach(i=>document.getElementById(i).value=''); document.getElementById('hv-date').value=today(); document.getElementById('hv-unit').selectedIndex=0; document.getElementById('hv-quality').selectedIndex=0; openSheet('harvest-sheet'); }
+function saveHarvest(){ const crop=document.getElementById('hv-crop').value.trim();if(!crop){toast('Crop required');return;} S.harvest.push({id:uid(),crop,date:document.getElementById('hv-date').value,yield:document.getElementById('hv-yield').value,unit:document.getElementById('hv-unit').value,bed:document.getElementById('hv-bed').value.trim(),quality:document.getElementById('hv-quality').value,notes:document.getElementById('hv-notes').value.trim()}); saveState(); closeSheet('harvest-sheet'); toast('Harvest logged'); renderHarvestLog(); }
+
+// ═══════════════════════════════════════════════════
+// DELETE HANDLERS (Products, Sales, Butcher, Freezer, Beds, Seeds, Harvest)
+// ═══════════════════════════════════════════════════
+function deleteProduct(id){ if(!confirm('Delete this product?')) return; S.products=S.products.filter(x=>x.id!==id); saveState(); toast('Product deleted'); renderProducts(); }
+function deleteSale(id){ if(!confirm('Delete this sale record?')) return; S.sales=S.sales.filter(x=>x.id!==id); saveState(); toast('Sale deleted'); milkSeg(milkTab); butcherSeg(butcherTab); }
+function deleteButcher(id){ if(!confirm('Delete this butcher record?')) return; S.butcher=S.butcher.filter(x=>x.id!==id); saveState(); toast('Butcher record deleted'); renderButcher(); }
+function deleteFreezerItem(id){ if(!confirm('Remove this item from freezer inventory?')) return; S.freezer=S.freezer.filter(x=>x.id!==id); saveState(); toast('Removed from freezer'); renderFreezer(); }
+function deleteBed(id){ if(!confirm('Delete this garden bed?')) return; S.beds=S.beds.filter(x=>x.id!==id); saveState(); toast('Bed deleted'); renderBeds(); }
+function deleteSeed(id){ if(!confirm('Delete this seed entry?')) return; S.seeds=S.seeds.filter(x=>x.id!==id); saveState(); toast('Seed entry deleted'); renderSeeds(); }
+function deleteHarvest(id){ if(!confirm('Delete this harvest log?')) return; S.harvest=S.harvest.filter(x=>x.id!==id); saveState(); toast('Harvest log deleted'); renderHarvestLog(); }
+function deleteMedical(id){ if(!confirm('Delete this medical record?')) return; S.medical=S.medical.filter(x=>x.id!==id); saveState(); toast('Medical record deleted'); openDetail(currentAnimalId); }
+function deleteBreeding(id){ if(!confirm('Delete this breeding record?')) return; S.breeding=S.breeding.filter(x=>x.id!==id); saveState(); toast('Breeding record deleted'); openDetail(currentAnimalId); }
+function deleteFeedLog(id){ if(!confirm('Delete this weight/feed log?')) return; S.feed=S.feed.filter(x=>x.id!==id); saveState(); toast('Log deleted'); openDetail(currentAnimalId); }
+function deleteMilkLog(id){ if(!confirm('Delete this milk log?')) return; S.milk=S.milk.filter(x=>x.id!==id); saveState(); toast('Milk log deleted'); openDetail(currentAnimalId); renderHome(); }
+
+// ═══════════════════════════════════════════════════
+// REMINDERS
+// ═══════════════════════════════════════════════════
+let remFilter='upcoming';
+
+function remSeg(f){
+  remFilter=f;
+  document.querySelectorAll('#page-reminders .seg-btn').forEach((b,i)=>b.classList.toggle('active',['upcoming','past','all'][i]===f));
+  renderReminders(f);
+}
+
+function remCardHtml(r,nowD){
+  const d=new Date(r.due); d.setHours(0,0,0,0);
+  const diff=Math.round((d-nowD)/(1000*60*60*24));
+  const cls=diff<0?'due-over':diff===0?'due-today':diff<=3?'due-soon':'due-ok';
+  const txt=diff<0?`${Math.abs(diff)}d over`:diff===0?'Today':diff===1?'Tomorrow':`${diff}d`;
+  const icon={medical:'ti-stethoscope',breeding:'ti-heart',feed:'ti-scale',garden:'ti-plant',general:'ti-bell'}[r.type]||'ti-bell';
+  const a=r.animalId?S.animals.find(x=>x.id===r.animalId):null;
+  return `<div class="reminder-card"><div class="rem-icon ${r.type}"><i class="ti ${icon}"></i></div><div style="flex:1"><div class="rem-title">${r.title}</div><div class="rem-sub">${a?a.name:'All'}${r.notes?' · '+r.notes.slice(0,40):''}</div></div><span class="due-badge ${cls}">${txt}</span></div>`;
+}
+
+function renderReminders(f){
+  f=f||remFilter;
+  const nowD=new Date(); nowD.setHours(0,0,0,0);
+  let list=[...S.reminders].sort((a,b)=>a.due.localeCompare(b.due));
+  if(f==='upcoming') list=list.filter(r=>{ const d=new Date(r.due); d.setHours(0,0,0,0); return d>=nowD; });
+  if(f==='past') list=list.filter(r=>{ const d=new Date(r.due); d.setHours(0,0,0,0); return d<nowD; });
+  const el=document.getElementById('reminders-list');
+  el.innerHTML=list.length?list.map(r=>{
+    const d=new Date(r.due); d.setHours(0,0,0,0);
+    const diff=Math.round((d-nowD)/(1000*60*60*24));
+    const cls=diff<0?'due-over':diff===0?'due-today':diff<=3?'due-soon':'due-ok';
+    const txt=diff<0?`${Math.abs(diff)}d over`:diff===0?'Today':diff===1?'Tomorrow':`${diff}d`;
+    const icon={medical:'ti-stethoscope',breeding:'ti-heart',feed:'ti-scale',garden:'ti-plant',general:'ti-bell'}[r.type]||'ti-bell';
+    const a=r.animalId?S.animals.find(x=>x.id===r.animalId):null;
+    return `<div class="card" style="margin-bottom:10px"><div style="padding:12px 14px"><div style="display:flex;align-items:center;gap:10px;margin-bottom:6px"><div class="rem-icon ${r.type}" style="width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0"><i class="ti ${icon}"></i></div><div style="flex:1;font-size:15px;font-weight:600">${r.title}</div><span class="due-badge ${cls}">${txt}</span></div>${r.notes?`<div style="font-size:13px;color:var(--text2);margin-bottom:6px">${r.notes}</div>`:''}<div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:12px;color:var(--brand-mid);font-weight:600">${a?'🐾 '+a.name:''}</span><div style="display:flex;gap:8px;align-items:center"><span style="font-size:12px;color:var(--text3)">${fmt(r.due)}</span><button onclick="deleteReminder('${r.id}')" style="background:none;border:none;color:var(--text3);font-size:16px;cursor:pointer"><i class="ti ti-trash"></i></button></div></div></div></div>`;
+  }).join(''):`<div class="empty-state"><div class="empty-icon">🔔</div><div class="empty-text">No ${f} reminders</div></div>`;
+}
+
+function resetReminderForm(){
+  ['r-title','r-notes'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('r-type').selectedIndex=0;
+  document.getElementById('r-due').value='';
+  const sel=document.getElementById('r-animal');
+  sel.innerHTML='<option value="">— No specific animal —</option>'+S.animals.map(a=>`<option value="${a.id}">${a.name} (${a.species})</option>`).join('');
+}
+
+function saveReminder(){
+  const title=document.getElementById('r-title').value.trim(), due=document.getElementById('r-due').value;
+  if(!title||!due){ toast('Title and due date required'); return; }
+  S.reminders.push({id:uid(),title,type:document.getElementById('r-type').value,animalId:document.getElementById('r-animal').value||null,due,notes:document.getElementById('r-notes').value.trim(),created:Date.now()});
+  saveState(); closeSheet('reminder-sheet'); toast('Reminder saved'); renderReminders(remFilter); renderHome();
+}
+
+function deleteReminder(id){
+  S.reminders=S.reminders.filter(r=>r.id!==id); saveState(); toast('Deleted'); renderReminders(remFilter); renderHome();
+}
+</script>
+</body>
+</html>
