@@ -1052,23 +1052,23 @@ function openDetail(id){
     </div>
     <div class="card" style="margin-bottom:10px">
       <div class="card-header"><div class="card-header-left"><i class="ti ti-stethoscope"></i>Medical Records</div></div>
-      ${med.length?med.map(m=>`<div class="list-item"><div class="list-item-sub">${fmt(m.date)}</div><div class="list-item-title">${m.type}${m.provider?' — '+m.provider:''}</div>${m.dose?`<div class="list-item-note">Dose: ${m.dose}</div>`:''} ${m.next?`<div class="list-item-note" style="color:var(--amber)">Next: ${fmt(m.next)}</div>`:''} ${m.notes?`<div class="list-item-note">${m.notes}</div>`:''}</div>`).join(''):`<div class="list-item" style="color:var(--text3);font-size:13px">No records yet</div>`}
+      ${med.length?med.map(m=>`<div class="list-item"><div style="display:flex;justify-content:space-between;align-items:flex-start"><div class="list-item-sub">${fmt(m.date)}</div><button onclick="deleteMedical('${m.id}')" style="background:none;border:none;color:var(--text3);font-size:16px;cursor:pointer"><i class="ti ti-trash"></i></button></div><div class="list-item-title">${m.type}${m.provider?' — '+m.provider:''}</div>${m.dose?`<div class="list-item-note">Dose: ${m.dose}</div>`:''} ${m.next?`<div class="list-item-note" style="color:var(--amber)">Next: ${fmt(m.next)}</div>`:''} ${m.notes?`<div class="list-item-note">${m.notes}</div>`:''}</div>`).join(''):`<div class="list-item" style="color:var(--text3);font-size:13px">No records yet</div>`}
       <button class="add-row-btn" onclick="openMedSheet()"><i class="ti ti-plus"></i>Add Medical Record</button>
     </div>
     <div class="card" style="margin-bottom:10px">
       <div class="card-header"><div class="card-header-left"><i class="ti ti-heart"></i>Breeding</div></div>
-      ${brd.length?brd.map(b=>`<div class="list-item"><div class="list-item-sub">${fmt(b.date)}</div><div class="list-item-title">${b.sire?'Bred to '+b.sire:'Breeding'} — <span style="color:var(--green)">${b.outcome}</span></div>${b.due?`<div class="list-item-note">Due: ${fmt(b.due)}</div>`:''} ${b.offspring?`<div class="list-item-note">Offspring: ${b.offspring}</div>`:''} ${b.notes?`<div class="list-item-note">${b.notes}</div>`:''}</div>`).join(''):`<div class="list-item" style="color:var(--text3);font-size:13px">No records yet</div>`}
+      ${brd.length?brd.map(b=>`<div class="list-item"><div style="display:flex;justify-content:space-between;align-items:flex-start"><div class="list-item-sub">${fmt(b.date)}</div><button onclick="deleteBreeding('${b.id}')" style="background:none;border:none;color:var(--text3);font-size:16px;cursor:pointer"><i class="ti ti-trash"></i></button></div><div class="list-item-title">${b.sire?'Bred to '+b.sire:'Breeding'} — <span style="color:var(--green)">${b.outcome}</span></div>${b.due?`<div class="list-item-note">Due: ${fmt(b.due)}</div>`:''} ${b.offspring?`<div class="list-item-note">Offspring: ${b.offspring}</div>`:''} ${b.notes?`<div class="list-item-note">${b.notes}</div>`:''}</div>`).join(''):`<div class="list-item" style="color:var(--text3);font-size:13px">No records yet</div>`}
       <button class="add-row-btn" onclick="openBreedSheet()"><i class="ti ti-plus"></i>Add Breeding Record</button>
     </div>
     <div class="card" style="margin-bottom:10px">
       <div class="card-header"><div class="card-header-left"><i class="ti ti-scale"></i>Weight & Feed</div></div>
-      ${fds.length?fds.slice(0,5).map(f=>`<div class="list-item"><div class="list-item-sub">${fmt(f.date)}</div>${f.weight?`<div class="list-item-title">Weight: ${f.weight} lbs</div>`:''} ${f.feed?`<div class="list-item-note">${f.feed}${f.amount?' · '+f.amount+' lbs/day':''}</div>`:''} ${f.notes?`<div class="list-item-note">${f.notes}</div>`:''}</div>`).join(''):`<div class="list-item" style="color:var(--text3);font-size:13px">No logs yet</div>`}
+      ${fds.length?fds.slice(0,5).map(f=>`<div class="list-item"><div style="display:flex;justify-content:space-between;align-items:flex-start"><div class="list-item-sub">${fmt(f.date)}</div><button onclick="deleteFeedLog('${f.id}')" style="background:none;border:none;color:var(--text3);font-size:16px;cursor:pointer"><i class="ti ti-trash"></i></button></div>${f.weight?`<div class="list-item-title">Weight: ${f.weight} lbs</div>`:''} ${f.feed?`<div class="list-item-note">${f.feed}${f.amount?' · '+f.amount+' lbs/day':''}</div>`:''} ${f.notes?`<div class="list-item-note">${f.notes}</div>`:''}</div>`).join(''):`<div class="list-item" style="color:var(--text3);font-size:13px">No logs yet</div>`}
       <button class="add-row-btn" onclick="openFeedSheet()"><i class="ti ti-plus"></i>Log Weight / Feed</button>
     </div>
     ${a.species==='Goat'||a.species==='Sheep'||a.species==='Cattle'?`
     <div class="card" style="margin-bottom:10px">
       <div class="card-header"><div class="card-header-left"><i class="ti ti-droplet"></i>Milk Log</div></div>
-      ${milks.length?milks.slice(0,5).map(m=>`<div class="milk-row"><span class="milk-date">${fmt(m.date)}</span><span class="milk-animal">${m.session||'AM'}</span><span class="milk-qty">${m.qty} oz</span></div>`).join(''):`<div class="list-item" style="color:var(--text3);font-size:13px">No milk logs for this animal</div>`}
+      ${milks.length?milks.slice(0,5).map(m=>`<div class="milk-row"><span class="milk-date">${fmt(m.date)}</span><span class="milk-animal">${m.session||'AM'}</span><span class="milk-qty">${m.qty} oz</span><button onclick="deleteMilkLog('${m.id}')" style="background:none;border:none;color:var(--text3);font-size:15px;cursor:pointer;padding:0 0 0 6px"><i class="ti ti-trash"></i></button></div>`).join(''):`<div class="list-item" style="color:var(--text3);font-size:13px">No milk logs for this animal</div>`}
       <button class="add-row-btn" onclick="openMilkSheetForAnimal('${id}')"><i class="ti ti-plus"></i>Log Milk</button>
     </div>`:''}
   `;
@@ -1525,6 +1525,10 @@ function deleteFreezerItem(id){ if(!confirm('Remove this item from freezer inven
 function deleteBed(id){ if(!confirm('Delete this garden bed?')) return; S.beds=S.beds.filter(x=>x.id!==id); saveState(); toast('Bed deleted'); renderBeds(); }
 function deleteSeed(id){ if(!confirm('Delete this seed entry?')) return; S.seeds=S.seeds.filter(x=>x.id!==id); saveState(); toast('Seed entry deleted'); renderSeeds(); }
 function deleteHarvest(id){ if(!confirm('Delete this harvest log?')) return; S.harvest=S.harvest.filter(x=>x.id!==id); saveState(); toast('Harvest log deleted'); renderHarvestLog(); }
+function deleteMedical(id){ if(!confirm('Delete this medical record?')) return; S.medical=S.medical.filter(x=>x.id!==id); saveState(); toast('Medical record deleted'); openDetail(currentAnimalId); }
+function deleteBreeding(id){ if(!confirm('Delete this breeding record?')) return; S.breeding=S.breeding.filter(x=>x.id!==id); saveState(); toast('Breeding record deleted'); openDetail(currentAnimalId); }
+function deleteFeedLog(id){ if(!confirm('Delete this weight/feed log?')) return; S.feed=S.feed.filter(x=>x.id!==id); saveState(); toast('Log deleted'); openDetail(currentAnimalId); }
+function deleteMilkLog(id){ if(!confirm('Delete this milk log?')) return; S.milk=S.milk.filter(x=>x.id!==id); saveState(); toast('Milk log deleted'); openDetail(currentAnimalId); renderHome(); }
 
 // ═══════════════════════════════════════════════════
 // REMINDERS
