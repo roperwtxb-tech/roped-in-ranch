@@ -1254,6 +1254,7 @@ function renderProducts(){
           <div style="display:flex;gap:6px;align-items:center">
             <span class="tag tag-brand">${p.cat}</span>
             <button onclick="editProduct('${p.id}')" style="background:none;border:none;color:var(--text3);font-size:16px;cursor:pointer"><i class="ti ti-edit"></i></button>
+            <button onclick="deleteProduct('${p.id}')" style="background:none;border:none;color:var(--text3);font-size:16px;cursor:pointer"><i class="ti ti-trash"></i></button>
           </div>
         </div>
         <div class="card-row"><span class="card-key">Batch Date</span><span class="card-val">${fmt(p.date)}</span></div>
@@ -1276,7 +1277,7 @@ function renderSales(context){
     </div>
     <div class="card">
       <div class="card-header"><div class="card-header-left"><i class="ti ti-cash"></i>Sales Records</div></div>
-      ${sales.length?sales.map(s=>`<div class="list-item"><div class="list-item-sub">${fmt(s.date)}${s.buyer?' · '+s.buyer:''}</div><div class="list-item-title">${s.item}</div><div style="display:flex;justify-content:space-between"><span class="list-item-note">${s.notes||''}</span><span style="font-weight:700;color:var(--green)">$${(+s.amount||0).toFixed(2)}</span></div></div>`).join(''):`<div class="list-item" style="color:var(--text3);font-size:13px">No sales yet</div>`}
+      ${sales.length?sales.map(s=>`<div class="list-item"><div class="list-item-sub">${fmt(s.date)}${s.buyer?' · '+s.buyer:''}</div><div class="list-item-title">${s.item}</div><div style="display:flex;justify-content:space-between;align-items:center"><span class="list-item-note">${s.notes||''}</span><div style="display:flex;align-items:center;gap:8px"><span style="font-weight:700;color:var(--green)">$${(+s.amount||0).toFixed(2)}</span><button onclick="deleteSale('${s.id}')" style="background:none;border:none;color:var(--text3);font-size:16px;cursor:pointer"><i class="ti ti-trash"></i></button></div></div></div>`).join(''):`<div class="list-item" style="color:var(--text3);font-size:13px">No sales yet</div>`}
     </div>
   `;
 }
@@ -1333,7 +1334,7 @@ function renderButcher(){
       <div><div style="font-size:22px;font-weight:700;color:var(--brand)">${bks.length}</div><div style="font-size:12px;color:var(--text3)">Butcher records</div></div>
       <button class="btn-add" onclick="openButcherSheet()"><i class="ti ti-plus"></i>Add</button>
     </div>
-    ${bks.length?bks.map(b=>{ const a=S.animals.find(x=>x.id===b.animalId); return `<div class="card" style="margin-bottom:10px"><div class="card-header"><div class="card-header-left"><i class="ti ti-meat"></i>${a?a.name:b.animalName||'Unknown'}</div><span class="tag tag-brand">${fmt(b.date)}</span></div>${b.live?`<div class="card-row"><span class="card-key">Live Weight</span><span class="card-val">${b.live} lbs</span></div>`:''} ${b.hang?`<div class="card-row"><span class="card-key">Hanging Weight</span><span class="card-val">${b.hang} lbs</span></div>`:''} ${b.processed?`<div class="card-row"><span class="card-key">Processed</span><span class="card-val">${b.processed} lbs</span></div>`:''} <div class="card-row"><span class="card-key">Purpose</span><span class="card-val">${b.purpose}</span></div>${b.cuts?`<div class="card-row" style="flex-direction:column;gap:4px"><span class="card-key">Cuts</span><span style="font-size:13px;color:var(--text2)">${b.cuts}</span></div>`:''} ${b.notes?`<div class="card-row" style="flex-direction:column;gap:4px"><span class="card-key">Notes</span><span style="font-size:13px;color:var(--text2)">${b.notes}</span></div>`:''}</div>`; }).join(''):`<div class="empty-state"><div class="empty-icon">🥩</div><div class="empty-text">No butcher records yet</div></div>`}
+    ${bks.length?bks.map(b=>{ const a=S.animals.find(x=>x.id===b.animalId); return `<div class="card" style="margin-bottom:10px"><div class="card-header"><div class="card-header-left"><i class="ti ti-meat"></i>${a?a.name:b.animalName||'Unknown'}</div><div style="display:flex;gap:6px;align-items:center"><span class="tag tag-brand">${fmt(b.date)}</span><button onclick="deleteButcher('${b.id}')" style="background:none;border:none;color:var(--text3);font-size:16px;cursor:pointer"><i class="ti ti-trash"></i></button></div></div>${b.live?`<div class="card-row"><span class="card-key">Live Weight</span><span class="card-val">${b.live} lbs</span></div>`:''} ${b.hang?`<div class="card-row"><span class="card-key">Hanging Weight</span><span class="card-val">${b.hang} lbs</span></div>`:''} ${b.processed?`<div class="card-row"><span class="card-key">Processed</span><span class="card-val">${b.processed} lbs</span></div>`:''} <div class="card-row"><span class="card-key">Purpose</span><span class="card-val">${b.purpose}</span></div>${b.cuts?`<div class="card-row" style="flex-direction:column;gap:4px"><span class="card-key">Cuts</span><span style="font-size:13px;color:var(--text2)">${b.cuts}</span></div>`:''} ${b.notes?`<div class="card-row" style="flex-direction:column;gap:4px"><span class="card-key">Notes</span><span style="font-size:13px;color:var(--text2)">${b.notes}</span></div>`:''}</div>`; }).join(''):`<div class="empty-state"><div class="empty-icon">🥩</div><div class="empty-text">No butcher records yet</div></div>`}
   `;
 }
 
@@ -1355,6 +1356,7 @@ function renderFreezer(){
             <button onclick="adjustFreezer('${f.id}',-1)" style="background:var(--red-pale);border:1px solid #F09595;border-radius:6px;color:var(--red);font-size:12px;padding:3px 8px;cursor:pointer;font-family:inherit">-1</button>
             <button onclick="adjustFreezer('${f.id}',1)" style="background:var(--green-pale);border:1px solid #C0DD97;border-radius:6px;color:var(--green);font-size:12px;padding:3px 8px;cursor:pointer;font-family:inherit">+1</button>
             <button onclick="editFreezer('${f.id}')" style="background:none;border:none;color:var(--text3);font-size:16px;cursor:pointer"><i class="ti ti-edit"></i></button>
+            <button onclick="deleteFreezerItem('${f.id}')" style="background:none;border:none;color:var(--text3);font-size:16px;cursor:pointer"><i class="ti ti-trash"></i></button>
           </div>
         </div>
       </div>`).join(''):`<div class="list-item" style="color:var(--text3);font-size:13px">Freezer is empty</div>`}
@@ -1430,7 +1432,7 @@ function renderBeds(){
       <button class="btn-add" style="background:var(--green)" onclick="openBedSheet()"><i class="ti ti-plus"></i>Add Bed</button>
     </div>
     ${S.beds.length?S.beds.map(b=>{ const plants=(b.plants||'').split(',').map(p=>p.trim()).filter(Boolean); return `<div class="garden-bed" onclick="editBed('${b.id}')">
-      <div class="bed-header"><span class="bed-icon">🌱</span><div><div class="bed-name">${b.name}</div><div class="bed-count">${b.size||''} · ${plants.length} plants${b.planted?' · Planted '+fmt(b.planted):''}</div></div></div>
+      <div class="bed-header"><span class="bed-icon">🌱</span><div style="flex:1"><div class="bed-name">${b.name}</div><div class="bed-count">${b.size||''} · ${plants.length} plants${b.planted?' · Planted '+fmt(b.planted):''}</div></div><button onclick="event.stopPropagation();deleteBed('${b.id}')" style="background:none;border:none;color:var(--text3);font-size:16px;cursor:pointer"><i class="ti ti-trash"></i></button></div>
       ${plants.length?`<div class="bed-plants">${plants.map(p=>`<span class="plant-chip">${p}</span>`).join('')}</div>`:''}
       ${b.companion?`<div class="companion-box"><strong>🌿 Companion notes</strong>${b.companion}</div>`:''}
     </div>`; }).join(''):`<div class="empty-state"><div class="empty-icon">🌱</div><div class="empty-text">No garden beds yet</div><div class="empty-sub">Add your first bed or row</div></div>`}
@@ -1448,7 +1450,7 @@ function renderSeeds(){
       ${S.seeds.length?S.seeds.map(s=>`<div class="list-item" onclick="editSeed('${s.id}')">
         <div style="display:flex;justify-content:space-between;align-items:flex-start">
           <div><div class="list-item-title">${s.name}</div><div class="list-item-sub">${[s.source,s.year].filter(Boolean).join(' · ')}${s.germ?' · '+s.germ+'% germ':''}</div></div>
-          <span style="font-weight:700;color:var(--green);font-size:15px">${s.qty} ${s.unit}</span>
+          <div style="display:flex;align-items:center;gap:8px"><span style="font-weight:700;color:var(--green);font-size:15px">${s.qty} ${s.unit}</span><button onclick="event.stopPropagation();deleteSeed('${s.id}')" style="background:none;border:none;color:var(--text3);font-size:16px;cursor:pointer"><i class="ti ti-trash"></i></button></div>
         </div>
         ${s.storage?`<div class="list-item-note">📦 ${s.storage}</div>`:''}
       </div>`).join(''):`<div class="list-item" style="color:var(--text3);font-size:13px">No seeds in inventory</div>`}
@@ -1467,7 +1469,7 @@ function renderHarvestLog(){
     </div>
     ${Object.keys(byCrop).length?`<div class="card" style="margin-bottom:10px"><div class="card-header"><div class="card-header-left"><i class="ti ti-chart-bar"></i>Totals by Crop</div></div>${Object.entries(byCrop).map(([c,t])=>`<div class="card-row"><span class="card-key">${c}</span><span class="card-val" style="color:var(--green);font-weight:700">${t} lbs</span></div>`).join('')}</div>`:''}
     <div class="card"><div class="card-header"><div class="card-header-left"><i class="ti ti-basket"></i>Harvest Log</div></div>
-      ${hv.length?hv.map(h=>`<div class="list-item"><div class="list-item-sub">${fmt(h.date)}${h.bed?' · '+h.bed:''}</div><div class="list-item-title">${h.crop} — ${h.yield} ${h.unit}</div><div style="display:flex;gap:8px"><span class="tag ${h.quality==='Excellent'?'tag-green':h.quality==='Good'?'tag-teal':h.quality==='Fair'?'tag-amber':'tag-red'}">${h.quality}</span>${h.notes?`<span class="list-item-note">${h.notes}</span>`:''}</div></div>`).join(''):`<div class="list-item" style="color:var(--text3);font-size:13px">No harvest logs yet</div>`}
+      ${hv.length?hv.map(h=>`<div class="list-item"><div class="list-item-sub">${fmt(h.date)}${h.bed?' · '+h.bed:''}</div><div class="list-item-title">${h.crop} — ${h.yield} ${h.unit}</div><div style="display:flex;justify-content:space-between;align-items:center"><div style="display:flex;gap:8px"><span class="tag ${h.quality==='Excellent'?'tag-green':h.quality==='Good'?'tag-teal':h.quality==='Fair'?'tag-amber':'tag-red'}">${h.quality}</span>${h.notes?`<span class="list-item-note">${h.notes}</span>`:''}</div><button onclick="deleteHarvest('${h.id}')" style="background:none;border:none;color:var(--text3);font-size:16px;cursor:pointer"><i class="ti ti-trash"></i></button></div></div>`).join(''):`<div class="list-item" style="color:var(--text3);font-size:13px">No harvest logs yet</div>`}
     </div>
   `;
 }
@@ -1512,6 +1514,17 @@ function saveSeed(){ const name=document.getElementById('sd-name').value.trim();
 
 function openHarvestSheet(){ ['hv-crop','hv-yield','hv-bed','hv-notes'].forEach(i=>document.getElementById(i).value=''); document.getElementById('hv-date').value=today(); document.getElementById('hv-unit').selectedIndex=0; document.getElementById('hv-quality').selectedIndex=0; openSheet('harvest-sheet'); }
 function saveHarvest(){ const crop=document.getElementById('hv-crop').value.trim();if(!crop){toast('Crop required');return;} S.harvest.push({id:uid(),crop,date:document.getElementById('hv-date').value,yield:document.getElementById('hv-yield').value,unit:document.getElementById('hv-unit').value,bed:document.getElementById('hv-bed').value.trim(),quality:document.getElementById('hv-quality').value,notes:document.getElementById('hv-notes').value.trim()}); saveState(); closeSheet('harvest-sheet'); toast('Harvest logged'); renderHarvestLog(); }
+
+// ═══════════════════════════════════════════════════
+// DELETE HANDLERS (Products, Sales, Butcher, Freezer, Beds, Seeds, Harvest)
+// ═══════════════════════════════════════════════════
+function deleteProduct(id){ if(!confirm('Delete this product?')) return; S.products=S.products.filter(x=>x.id!==id); saveState(); toast('Product deleted'); renderProducts(); }
+function deleteSale(id){ if(!confirm('Delete this sale record?')) return; S.sales=S.sales.filter(x=>x.id!==id); saveState(); toast('Sale deleted'); milkSeg(milkTab); butcherSeg(butcherTab); }
+function deleteButcher(id){ if(!confirm('Delete this butcher record?')) return; S.butcher=S.butcher.filter(x=>x.id!==id); saveState(); toast('Butcher record deleted'); renderButcher(); }
+function deleteFreezerItem(id){ if(!confirm('Remove this item from freezer inventory?')) return; S.freezer=S.freezer.filter(x=>x.id!==id); saveState(); toast('Removed from freezer'); renderFreezer(); }
+function deleteBed(id){ if(!confirm('Delete this garden bed?')) return; S.beds=S.beds.filter(x=>x.id!==id); saveState(); toast('Bed deleted'); renderBeds(); }
+function deleteSeed(id){ if(!confirm('Delete this seed entry?')) return; S.seeds=S.seeds.filter(x=>x.id!==id); saveState(); toast('Seed entry deleted'); renderSeeds(); }
+function deleteHarvest(id){ if(!confirm('Delete this harvest log?')) return; S.harvest=S.harvest.filter(x=>x.id!==id); saveState(); toast('Harvest log deleted'); renderHarvestLog(); }
 
 // ═══════════════════════════════════════════════════
 // REMINDERS
