@@ -51,8 +51,8 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sa
 
 /* ── BOTTOM NAV ── */
 .bottom-nav{background:var(--brand);border-top:1px solid rgba(255,255,255,0.1);display:flex;padding-bottom:env(safe-area-inset-bottom,0);flex-shrink:0}
-.nav-tab{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;background:none;border:none;color:rgba(200,169,122,0.55);font-size:9.5px;cursor:pointer;padding:8px 2px 10px;letter-spacing:0.2px;font-family:inherit;transition:color 0.15s}
-.nav-tab i{font-size:21px;line-height:1}
+.nav-tab{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;gap:2px;background:none;border:none;color:rgba(200,169,122,0.55);font-size:9px;cursor:pointer;padding:8px 1px 10px;letter-spacing:0;font-family:inherit;transition:color 0.15s}
+.nav-tab i{font-size:20px;line-height:1}
 .nav-tab.active{color:#F5EDD8}
 
 /* ── PAGES ── */
@@ -262,7 +262,10 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sa
     <div class="page" id="page-animals">
       <div class="page-header">
         <div class="page-title">Animals</div>
-        <button class="btn-add" onclick="openSheet('animal-sheet',resetAnimalForm)"><i class="ti ti-plus"></i>Add</button>
+        <div style="display:flex;gap:8px">
+          <button class="btn-add" style="background:var(--brand-mid)" onclick="openSheet('batch-med-sheet',resetBatchMedForm)"><i class="ti ti-vaccine"></i>Quick Add</button>
+          <button class="btn-add" onclick="openSheet('animal-sheet',resetAnimalForm)"><i class="ti ti-plus"></i>Add</button>
+        </div>
       </div>
       <div class="search-bar"><div class="search-wrap"><i class="ti ti-search"></i><input class="search-input" type="text" placeholder="Search name or tag…" id="animal-search" oninput="renderAnimals()"></div></div>
       <div class="filter-chips" id="species-chips"></div>
@@ -324,9 +327,21 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sa
       <div class="seg-control">
         <button class="seg-btn active" onclick="remSeg('upcoming')">Upcoming</button>
         <button class="seg-btn" onclick="remSeg('past')">Past</button>
+        <button class="seg-btn" onclick="remSeg('done')">Done</button>
         <button class="seg-btn" onclick="remSeg('all')">All</button>
       </div>
       <div id="reminders-list"></div>
+    </div>
+
+    <div class="page" id="page-log">
+      <div class="page-header">
+        <div class="page-title">Ranch Log</div>
+        <button class="btn-add" onclick="openSheet('log-sheet',resetLogForm)"><i class="ti ti-plus"></i>Add</button>
+      </div>
+      <div class="search-bar"><div class="search-wrap"><i class="ti ti-search"></i><input class="search-input" type="text" placeholder="Search the log…" id="log-search" oninput="renderLog()"></div></div>
+      <div class="filter-chips" id="log-chips"></div>
+      <div id="log-total"></div>
+      <div id="log-list"></div>
     </div>
   </div>
 
@@ -338,6 +353,7 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sa
     <button class="nav-tab" data-page="butcher" onclick="switchTab('butcher')"><i class="ti ti-meat"></i>Butcher</button>
     <button class="nav-tab" data-page="garden" onclick="switchTab('garden')"><i class="ti ti-plant"></i>Garden</button>
     <button class="nav-tab" data-page="reminders" onclick="switchTab('reminders')"><i class="ti ti-bell"></i>Alerts</button>
+    <button class="nav-tab" data-page="log" onclick="switchTab('log')"><i class="ti ti-notebook"></i>Log</button>
   </div>
 </div>
 
@@ -724,12 +740,64 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sa
   </div>
 </div>
 
+<div class="sheet-overlay" id="log-sheet">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-header"><div class="sheet-title" id="log-sheet-title">Log Entry</div><button class="sheet-close" onclick="closeSheet('log-sheet')">✕</button></div>
+    <div class="sheet-body">
+      <div class="fg"><label class="fl">What happened? *</label><input class="fi" id="g-title" placeholder="3 round bales of hay"></div>
+      <div class="form-row">
+        <div class="fg"><label class="fl">Date *</label><input class="fi" type="date" id="g-date"></div>
+        <div class="fg"><label class="fl">Cost ($)</label><input class="fi" type="number" step="0.01" id="g-amount" placeholder="—"></div>
+      </div>
+      <div class="fg"><label class="fl">Category</label>
+        <select class="fs" id="g-category">
+          <option>Feed / Hay</option><option>Supplies</option><option>Vet / Medicine</option>
+          <option>Equipment</option><option>Repair / Maintenance</option><option>Fencing</option>
+          <option>Animal Purchase</option><option>Income</option><option>Note</option><option>Other</option>
+        </select>
+      </div>
+      <div class="fg"><label class="fl">Animal (optional)</label><select class="fs" id="g-animal"></select></div>
+      <div class="fg"><label class="fl">Notes</label><textarea class="ft" id="g-notes"></textarea></div>
+      <input type="hidden" id="g-edit-id">
+      <button class="btn-primary" onclick="saveLog()">Save Entry</button>
+      <button class="btn-secondary" onclick="closeSheet('log-sheet')">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<div class="sheet-overlay" id="batch-med-sheet">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-header"><div class="sheet-title">Quick Add — Treatment</div><button class="sheet-close" onclick="closeSheet('batch-med-sheet')">✕</button></div>
+    <div class="sheet-body">
+      <div class="fg"><label class="fl">Treatment *</label>
+        <select class="fs" id="bm-type"><option>Deworming</option><option>Vaccination</option><option>Vet Visit</option><option>Medication</option><option>Hoof/Farrier</option><option>Injury</option><option>Surgery</option><option>Other</option></select>
+      </div>
+      <div class="form-row">
+        <div class="fg"><label class="fl">Date *</label><input class="fi" type="date" id="bm-date"></div>
+        <div class="fg"><label class="fl">Next Due</label><input class="fi" type="date" id="bm-next"></div>
+      </div>
+      <div class="fg"><label class="fl">Provider / Product</label><input class="fi" id="bm-provider" placeholder="Safeguard"></div>
+      <div class="fg"><label class="fl">Dose / Amount</label><input class="fi" id="bm-dose" placeholder="2cc"></div>
+      <div class="fg"><label class="fl">Notes</label><textarea class="ft" id="bm-notes"></textarea></div>
+      <div class="fg">
+        <label class="fl">Who got it? <span id="bm-count" style="color:var(--brand-mid);font-weight:700"></span></label>
+        <div class="filter-chips" id="bm-groups" style="margin:0 0 10px"></div>
+        <div id="bm-animals" style="max-height:260px;overflow-y:auto;border:1px solid var(--border);border-radius:10px;padding:4px"></div>
+      </div>
+      <button class="btn-primary" onclick="saveBatchMedical()">Save to Selected</button>
+      <button class="btn-secondary" onclick="closeSheet('batch-med-sheet')">Cancel</button>
+    </div>
+  </div>
+</div>
+
 <script>
 // ═══════════════════════════════════════════════════
 // DATA
 // ═══════════════════════════════════════════════════
 const PASSWORD = 'roper2024';
-let S = { animals:[], medical:[], breeding:[], feed:[], milk:[], products:[], sales:[], butcher:[], freezer:[], beds:[], seeds:[], harvest:[], reminders:[] };
+let S = { animals:[], medical:[], breeding:[], feed:[], milk:[], products:[], sales:[], butcher:[], freezer:[], beds:[], seeds:[], harvest:[], reminders:[], ranch_log:[] };
 
 // ── SUPABASE ──
 // Shared cloud database so both phones read/write the same data.
@@ -739,13 +807,14 @@ const SUPABASE_URL = 'https://hrtuhexblsbdjfdbfblg.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhydHVoZXhibHNiZGpmZGJmYmxnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQxMzg2MjAsImV4cCI6MjA5OTcxNDYyMH0.UuG4vU-qqcEs7LffzhgDqb2tVBq9RaeR1gwhvOpJXvs';
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-const TABLES = ['animals','medical','breeding','feed','milk','products','sales','butcher','freezer','beds','seeds','harvest','reminders'];
+const TABLES = ['animals','medical','breeding','feed','milk','products','sales','butcher','freezer','beds','seeds','harvest','reminders','ranch_log'];
 // Only a few fields are named differently in the database (snake_case columns);
 // everything else matches the app's field names exactly.
 const COL_RENAME = {
   medical:{animalId:'animal_id'}, breeding:{animalId:'animal_id'}, feed:{animalId:'animal_id'},
-  milk:{animalId:'animal_id'}, reminders:{animalId:'animal_id'},
-  butcher:{animalId:'animal_id', animalName:'animal_name'}
+  milk:{animalId:'animal_id'}, reminders:{animalId:'animal_id', doneDate:'done_date'},
+  butcher:{animalId:'animal_id', animalName:'animal_name'},
+  ranch_log:{animalId:'animal_id'}
 };
 function toDb(table,obj){ const map=COL_RENAME[table]||{}; const out={}; for(const k in obj){ if(obj[k]===undefined) continue; out[map[k]||k]=obj[k]; } return out; }
 function fromDb(table,row){ const map=COL_RENAME[table]||{}; const inv={}; for(const k in map) inv[map[k]]=k; const out={}; for(const k in row){ if(k==='updated_at') continue; out[inv[k]||k]=row[k]; } return out; }
@@ -849,7 +918,7 @@ function subscribeRealtime(){
 // Re-renders whatever's currently on screen; used after a realtime update
 // arrives from the other phone.
 function renderCurrentView(){
-  setGreeting(); renderHome(); renderAnimals(); milkSeg(milkTab||'milk'); butcherSeg(butcherTab||'records'); gardenSeg(gardenTab||'beds'); renderReminders(remFilter||'upcoming');
+  setGreeting(); renderHome(); renderAnimals(); milkSeg(milkTab||'milk'); butcherSeg(butcherTab||'records'); gardenSeg(gardenTab||'beds'); renderReminders(remFilter||'upcoming'); renderLog();
   if(currentAnimalId && document.getElementById('page-detail').classList.contains('active')) openDetail(currentAnimalId);
 }
 
@@ -887,7 +956,7 @@ function initApp(){
   setGreeting(); renderHome(); renderAnimals(); renderMilk('milk'); renderButcher('records'); gardenSeg('beds'); renderReminders('upcoming');
 }
 
-const TAB_TITLES={home:'Roped In Ranch',animals:'Animals',milk:'Milk & Products',butcher:'Butcher & Freezer',garden:'Garden',reminders:'Reminders'};
+const TAB_TITLES={home:'Roped In Ranch',animals:'Animals',milk:'Milk & Products',butcher:'Butcher & Freezer',garden:'Garden',reminders:'Reminders',log:'Ranch Log'};
 
 function switchTab(tab){
   if(tab===currentTab && tab!=='animals') return;
@@ -897,17 +966,19 @@ function switchTab(tab){
   document.getElementById('page-detail').classList.remove('active');
   document.getElementById('header-title').textContent=TAB_TITLES[tab]||tab;
   const addBtn=document.getElementById('hdr-add');
-  addBtn.style.display=tab==='reminders'?'flex':'none';
+  addBtn.style.display=(tab==='reminders'||tab==='log')?'flex':'none';
   if(tab==='home') renderHome();
   if(tab==='animals') renderAnimals();
   if(tab==='milk'){ milkSeg('milk'); }
   if(tab==='butcher'){ butcherSeg('records'); }
   if(tab==='garden'){ gardenSeg('beds'); }
   if(tab==='reminders') renderReminders(remFilter);
+  if(tab==='log') renderLog();
 }
 
 function headerAdd(){
   if(currentTab==='reminders') { resetReminderForm(); openSheet('reminder-sheet'); }
+  if(currentTab==='log') { resetLogForm(); openSheet('log-sheet'); }
 }
 
 function goBack(){
@@ -944,7 +1015,7 @@ function renderHome(){
   const todayStr=today();
   const nowD=new Date(); nowD.setHours(0,0,0,0);
   const soon=new Date(nowD); soon.setDate(soon.getDate()+7);
-  const upcoming=S.reminders.filter(r=>{ const d=new Date(r.due); d.setHours(0,0,0,0); return d>=nowD; });
+  const upcoming=S.reminders.filter(r=>!r.done).filter(r=>{ const d=new Date(r.due); d.setHours(0,0,0,0); return d>=nowD; });
   const milkTotal=S.milk.filter(m=>m.date===todayStr).reduce((s,m)=>s+(+m.qty||0),0);
   document.getElementById('home-stats').innerHTML=`
     <div class="stat-card"><div class="stat-num">${active}</div><div class="stat-label">Active Animals</div></div>
@@ -1550,7 +1621,7 @@ let remFilter='upcoming';
 
 function remSeg(f){
   remFilter=f;
-  document.querySelectorAll('#page-reminders .seg-btn').forEach((b,i)=>b.classList.toggle('active',['upcoming','past','all'][i]===f));
+  document.querySelectorAll('#page-reminders .seg-btn').forEach((b,i)=>b.classList.toggle('active',['upcoming','past','done','all'][i]===f));
   renderReminders(f);
 }
 
@@ -1568,17 +1639,18 @@ function renderReminders(f){
   f=f||remFilter;
   const nowD=new Date(); nowD.setHours(0,0,0,0);
   let list=[...S.reminders].sort((a,b)=>a.due.localeCompare(b.due));
-  if(f==='upcoming') list=list.filter(r=>{ const d=new Date(r.due); d.setHours(0,0,0,0); return d>=nowD; });
-  if(f==='past') list=list.filter(r=>{ const d=new Date(r.due); d.setHours(0,0,0,0); return d<nowD; });
+  if(f==='upcoming') list=list.filter(r=>!r.done).filter(r=>{ const d=new Date(r.due); d.setHours(0,0,0,0); return d>=nowD; });
+  if(f==='past') list=list.filter(r=>!r.done).filter(r=>{ const d=new Date(r.due); d.setHours(0,0,0,0); return d<nowD; });
+  if(f==='done') list=list.filter(r=>r.done).sort((a,b)=>(b.doneDate||'').localeCompare(a.doneDate||''));
   const el=document.getElementById('reminders-list');
   el.innerHTML=list.length?list.map(r=>{
     const d=new Date(r.due); d.setHours(0,0,0,0);
     const diff=Math.round((d-nowD)/(1000*60*60*24));
-    const cls=diff<0?'due-over':diff===0?'due-today':diff<=3?'due-soon':'due-ok';
-    const txt=diff<0?`${Math.abs(diff)}d over`:diff===0?'Today':diff===1?'Tomorrow':`${diff}d`;
+    const cls=r.done?'due-ok':diff<0?'due-over':diff===0?'due-today':diff<=3?'due-soon':'due-ok';
+    const txt=r.done?'Done':diff<0?`${Math.abs(diff)}d over`:diff===0?'Today':diff===1?'Tomorrow':`${diff}d`;
     const icon={medical:'ti-stethoscope',breeding:'ti-heart',feed:'ti-scale',garden:'ti-plant',general:'ti-bell'}[r.type]||'ti-bell';
     const a=r.animalId?S.animals.find(x=>x.id===r.animalId):null;
-    return `<div class="card" style="margin-bottom:10px"><div style="padding:12px 14px"><div style="display:flex;align-items:center;gap:10px;margin-bottom:6px"><div class="rem-icon ${r.type}" style="width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0"><i class="ti ${icon}"></i></div><div style="flex:1;font-size:15px;font-weight:600">${r.title}</div><span class="due-badge ${cls}">${txt}</span></div>${r.notes?`<div style="font-size:13px;color:var(--text2);margin-bottom:6px">${r.notes}</div>`:''}<div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:12px;color:var(--brand-mid);font-weight:600">${a?'🐾 '+a.name:''}</span><div style="display:flex;gap:8px;align-items:center"><span style="font-size:12px;color:var(--text3)">${fmt(r.due)}</span><button onclick="deleteReminder('${r.id}')" style="background:none;border:none;color:var(--text3);font-size:16px;cursor:pointer"><i class="ti ti-trash"></i></button></div></div></div></div>`;
+    return `<div class="card" style="margin-bottom:10px"><div style="padding:12px 14px"><div style="display:flex;align-items:center;gap:10px;margin-bottom:6px"><div class="rem-icon ${r.type}" style="width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0"><i class="ti ${icon}"></i></div><div style="flex:1;font-size:15px;font-weight:600">${r.title}</div><span class="due-badge ${cls}">${txt}</span></div>${r.notes?`<div style="font-size:13px;color:var(--text2);margin-bottom:6px">${r.notes}</div>`:''}<div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:12px;color:var(--brand-mid);font-weight:600">${a?'🐾 '+a.name:''}</span><div style="display:flex;gap:10px;align-items:center"><span style="font-size:12px;color:var(--text3)">${r.done?'done '+fmt(r.doneDate||r.due):fmt(r.due)}</span>${r.done?`<button onclick="undoReminder('${r.id}')" title="Reopen" style="background:none;border:none;color:var(--text3);font-size:16px;cursor:pointer"><i class="ti ti-rotate"></i></button>`:`<button onclick="markReminderDone('${r.id}')" title="Mark done" style="background:none;border:none;color:var(--brand-mid);font-size:19px;cursor:pointer"><i class="ti ti-circle-check"></i></button>`}<button onclick="deleteReminder('${r.id}')" style="background:none;border:none;color:var(--text3);font-size:16px;cursor:pointer"><i class="ti ti-trash"></i></button></div></div></div></div>`;
   }).join(''):`<div class="empty-state"><div class="empty-icon">🔔</div><div class="empty-text">No ${f} reminders</div></div>`;
 }
 
@@ -1597,8 +1669,188 @@ function saveReminder(){
   saveState(); closeSheet('reminder-sheet'); toast('Reminder saved'); renderReminders(remFilter); renderHome();
 }
 
+function markReminderDone(id){
+  const r=S.reminders.find(x=>x.id===id); if(!r) return;
+  r.done='yes'; r.doneDate=today();
+  saveState(); toast('Marked done — kept under Done'); renderReminders(remFilter); renderHome();
+}
+
+function undoReminder(id){
+  const r=S.reminders.find(x=>x.id===id); if(!r) return;
+  // Null, not delete: toDb() skips undefined keys, so a deleted property would
+  // leave the old value sitting in the database and come back on the next pull.
+  r.done=null; r.doneDate=null;
+  saveState(); toast('Reopened'); renderReminders(remFilter); renderHome();
+}
+
 function deleteReminder(id){
+  if(!confirm('Delete this reminder for good? If you just finished it, use the ✓ instead — that keeps the record.')) return;
   S.reminders=S.reminders.filter(r=>r.id!==id); saveState(); toast('Deleted'); renderReminders(remFilter); renderHome();
+}
+
+// ═══════════════════════════════════════════════════
+// BATCH MEDICAL — one treatment, many animals
+// ═══════════════════════════════════════════════════
+// Ranch species don't all take a plain -s ("All Sheeps" reads badly).
+const PLURAL_SAME=['sheep','cattle','bison','elk','deer','poultry','swine','fish','quail','waterfowl'];
+const PLURAL_IRREG={goose:'Geese',mouse:'Mice',ox:'Oxen'};
+function plural(w){
+  if(!w) return w;
+  const k=w.toLowerCase().trim();
+  if(PLURAL_IRREG[k]) return PLURAL_IRREG[k];
+  if(PLURAL_SAME.includes(k)) return w;
+  if(/(s|x|z|ch|sh)$/i.test(w)) return w+'es';
+  if(/[^aeiou]y$/i.test(w)) return w.slice(0,-1)+'ies';
+  return w+'s';
+}
+
+function resetBatchMedForm(){
+  ['bm-provider','bm-dose','bm-notes'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('bm-type').selectedIndex=0;
+  document.getElementById('bm-date').value=today();
+  document.getElementById('bm-next').value='';
+  const live=S.animals.filter(a=>a.status!=='Sold'&&a.status!=='Deceased'&&a.status!=='Butchered');
+  const species=[...new Set(live.map(a=>a.species).filter(Boolean))].sort();
+  document.getElementById('bm-groups').innerHTML=species.map(s=>
+    `<div class="chip" onclick="bmToggleGroup('${s.replace(/'/g,"\\'")}')">All ${plural(s)}</div>`
+  ).join('')+`<div class="chip" onclick="bmToggleGroup('__none__')">Clear</div>`;
+  document.getElementById('bm-animals').innerHTML=live.length?live.sort((a,b)=>
+    (a.species||'').localeCompare(b.species||'')||a.name.localeCompare(b.name)
+  ).map(a=>
+    `<label style="display:flex;align-items:center;gap:10px;padding:9px 8px;border-bottom:1px solid var(--border);cursor:pointer">
+       <input type="checkbox" class="bm-chk" value="${a.id}" data-species="${a.species||''}" onchange="bmUpdateCount()" style="width:18px;height:18px;accent-color:var(--brand-mid);flex-shrink:0">
+       <span style="font-size:14px;flex:1">${a.name}</span>
+       <span style="font-size:12px;color:var(--text3)">${a.species||''}</span>
+     </label>`
+  ).join(''):`<div style="padding:16px;text-align:center;color:var(--text3);font-size:13px">No active animals yet</div>`;
+  bmUpdateCount();
+}
+
+function bmToggleGroup(species){
+  const boxes=[...document.querySelectorAll('.bm-chk')];
+  if(species==='__none__'){ boxes.forEach(b=>b.checked=false); bmUpdateCount(); return; }
+  const grp=boxes.filter(b=>b.dataset.species===species);
+  const allOn=grp.length>0&&grp.every(b=>b.checked);
+  grp.forEach(b=>b.checked=!allOn);
+  bmUpdateCount();
+}
+
+function bmUpdateCount(){
+  const n=document.querySelectorAll('.bm-chk:checked').length;
+  document.getElementById('bm-count').textContent=n?`— ${n} selected`:'';
+}
+
+function saveBatchMedical(){
+  const date=document.getElementById('bm-date').value;
+  const type=document.getElementById('bm-type').value;
+  const ids=[...document.querySelectorAll('.bm-chk:checked')].map(b=>b.value);
+  if(!date){ toast('Date required'); return; }
+  if(!ids.length){ toast('Pick at least one animal'); return; }
+  const provider=document.getElementById('bm-provider').value.trim();
+  const dose=document.getElementById('bm-dose').value.trim();
+  const notes=document.getElementById('bm-notes').value.trim();
+  const next=document.getElementById('bm-next').value;
+  ids.forEach(aid=>{
+    S.medical.push({id:uid(),animalId:aid,type,date,provider,dose,next,weight:'',notes});
+  });
+  // One grouped reminder for the whole batch, not one per animal.
+  if(next){
+    const names=ids.map(i=>S.animals.find(a=>a.id===i)?.name).filter(Boolean);
+    const label=names.length<=3?names.join(', '):`${names.length} animals`;
+    S.reminders.push({id:uid(),title:`${type} due — ${label}`,type:'medical',animalId:ids.length===1?ids[0]:null,
+      due:next,notes:`Auto-created from quick add: ${names.join(', ')}`,created:Date.now()});
+  }
+  saveState(); closeSheet('batch-med-sheet');
+  toast(`${type} logged for ${ids.length} animal${ids.length>1?'s':''}`);
+  renderAnimals(); renderHome();
+}
+
+// ═══════════════════════════════════════════════════
+// RANCH LOG — events and purchases that are records, not reminders
+// ═══════════════════════════════════════════════════
+let logFilter='All';
+
+function resetLogForm(){
+  ['g-title','g-amount','g-notes','g-edit-id'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('g-category').selectedIndex=0;
+  document.getElementById('g-date').value=today();
+  document.getElementById('log-sheet-title').textContent='Log Entry';
+  const sel=document.getElementById('g-animal');
+  sel.innerHTML='<option value="">— Not animal-specific —</option>'+S.animals.map(a=>`<option value="${a.id}">${a.name} (${a.species||''})</option>`).join('');
+}
+
+function editLog(id){
+  const e=S.ranch_log.find(x=>x.id===id); if(!e) return;
+  resetLogForm();
+  document.getElementById('log-sheet-title').textContent='Edit Entry';
+  document.getElementById('g-edit-id').value=e.id;
+  document.getElementById('g-title').value=e.title||'';
+  document.getElementById('g-date').value=e.date||'';
+  document.getElementById('g-amount').value=e.amount||'';
+  document.getElementById('g-category').value=e.category||'Note';
+  document.getElementById('g-animal').value=e.animalId||'';
+  document.getElementById('g-notes').value=e.notes||'';
+  openSheet('log-sheet');
+}
+
+function saveLog(){
+  const title=document.getElementById('g-title').value.trim();
+  const date=document.getElementById('g-date').value;
+  if(!title||!date){ toast('What happened, and the date'); return; }
+  const editId=document.getElementById('g-edit-id').value;
+  const rec={
+    id:editId||uid(), title, date,
+    category:document.getElementById('g-category').value,
+    amount:document.getElementById('g-amount').value,
+    animalId:document.getElementById('g-animal').value||null,
+    notes:document.getElementById('g-notes').value.trim(),
+    created:editId?(S.ranch_log.find(x=>x.id===editId)?.created||Date.now()):Date.now()
+  };
+  if(editId){ const i=S.ranch_log.findIndex(x=>x.id===editId); if(i>-1) S.ranch_log[i]=rec; }
+  else S.ranch_log.push(rec);
+  saveState(); closeSheet('log-sheet'); toast(editId?'Entry updated':'Logged'); renderLog();
+}
+
+function deleteLog(id){
+  if(!confirm('Delete this log entry?')) return;
+  S.ranch_log=S.ranch_log.filter(x=>x.id!==id); saveState(); toast('Deleted'); renderLog();
+}
+
+function setLogFilter(c){ logFilter=c; renderLog(); }
+
+function renderLog(){
+  const cats=['All',...new Set(S.ranch_log.map(e=>e.category).filter(Boolean))];
+  document.getElementById('log-chips').innerHTML=cats.map(c=>
+    `<div class="chip${c===logFilter?' active':''}" onclick="setLogFilter('${c.replace(/'/g,"\\'")}')">${c}</div>`
+  ).join('');
+  const q=(document.getElementById('log-search')?.value||'').toLowerCase();
+  const list=S.ranch_log
+    .filter(e=>logFilter==='All'||e.category===logFilter)
+    .filter(e=>!q||(e.title||'').toLowerCase().includes(q)||(e.notes||'').toLowerCase().includes(q)||(e.category||'').toLowerCase().includes(q))
+    .sort((a,b)=>(b.date||'').localeCompare(a.date||''));
+  const spent=list.reduce((s,e)=>s+(e.category==='Income'?0:(+e.amount||0)),0);
+  document.getElementById('log-total').innerHTML=spent>0
+    ? `<div style="margin:0 16px 12px;padding:10px 14px;background:var(--brand-pale);border-radius:10px;font-size:13px;color:var(--brand-mid);font-weight:600">${list.length} entr${list.length===1?'y':'ies'} · $${spent.toFixed(2)} spent</div>`
+    : '';
+  const icon={'Feed / Hay':'ti-wheat','Supplies':'ti-basket','Vet / Medicine':'ti-stethoscope','Equipment':'ti-tractor','Repair / Maintenance':'ti-tool','Fencing':'ti-fence','Animal Purchase':'ti-paw','Income':'ti-cash','Note':'ti-note'};
+  document.getElementById('log-list').innerHTML=list.length?list.map(e=>{
+    const a=e.animalId?S.animals.find(x=>x.id===e.animalId):null;
+    const amt=(+e.amount)?`<span style="font-size:14px;font-weight:700;color:${e.category==='Income'?'#3E6B3E':'var(--brand-mid)'}">${e.category==='Income'?'+':''}$${(+e.amount).toFixed(2)}</span>`:'';
+    return `<div class="card" style="margin-bottom:10px"><div style="padding:12px 14px">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
+        <div style="width:32px;height:32px;border-radius:8px;background:var(--brand-pale);display:flex;align-items:center;justify-content:center;font-size:16px;color:var(--brand-mid);flex-shrink:0"><i class="ti ${icon[e.category]||'ti-note'}"></i></div>
+        <div style="flex:1;font-size:15px;font-weight:600">${e.title}</div>${amt}
+      </div>
+      ${e.notes?`<div style="font-size:13px;color:var(--text2);margin-bottom:6px">${e.notes}</div>`:''}
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <span style="font-size:12px;color:var(--brand-mid);font-weight:600">${e.category||''}${a?' · 🐾 '+a.name:''}</span>
+        <div style="display:flex;gap:10px;align-items:center">
+          <span style="font-size:12px;color:var(--text3)">${fmt(e.date)}</span>
+          <button onclick="editLog('${e.id}')" style="background:none;border:none;color:var(--text3);font-size:16px;cursor:pointer"><i class="ti ti-pencil"></i></button>
+          <button onclick="deleteLog('${e.id}')" style="background:none;border:none;color:var(--text3);font-size:16px;cursor:pointer"><i class="ti ti-trash"></i></button>
+        </div>
+      </div></div></div>`;
+  }).join(''):`<div class="empty-state"><div class="empty-icon">📓</div><div class="empty-text">${S.ranch_log.length?'No matches':'Nothing logged yet'}</div><div class="empty-sub">${S.ranch_log.length?'Try another filter':'Hay, supplies, repairs — anything you want a record of'}</div></div>`;
 }
 </script>
 </body>
