@@ -226,7 +226,7 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sa
   <div class="login-logo">🤠</div>
   <div class="login-title">Roped In Ranch</div>
   <div class="login-sub">Ranch Manager</div>
-  <div class="login-card">
+  <div class="login-card" id="login-card">
     <label class="login-label">Password</label>
     <input class="login-input" type="password" id="login-pass" placeholder="Enter password" autocomplete="current-password">
     <button class="login-btn" onclick="doLogin()">Sign In</button>
@@ -256,6 +256,9 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sa
       <div id="home-reminders"></div>
       <div class="section-label">Recent animals</div>
       <div id="home-animals"></div>
+      <div style="text-align:center;padding:26px 16px 10px">
+        <button onclick="signOut()" style="background:none;border:none;color:var(--text3);font-size:12.5px;font-family:inherit;cursor:pointer;text-decoration:underline">Sign out on this phone</button>
+      </div>
     </div>
 
     <!-- ANIMALS -->
@@ -930,21 +933,38 @@ function calcAge(dob){ const d=new Date(dob),n=new Date(); let mo=(n.getFullYear
 // ═══════════════════════════════════════════════════
 // AUTH
 // ═══════════════════════════════════════════════════
+// Once you've signed in on a phone, this flag keeps you signed in on that phone
+// until you tap Sign Out. It lives only in that device's own storage.
+const REMEMBER_KEY='rir_signedin';
+function isRemembered(){ try{ return localStorage.getItem(REMEMBER_KEY)==='1'; }catch(e){ return false; } }
+
+async function enterApp(){
+  const errEl=document.getElementById('login-err');
+  errEl.style.color=''; errEl.textContent='Loading ranch data…';
+  pendingSyncMessage=null;
+  const ok = await pullState();
+  document.getElementById('login-screen').style.display='none';
+  document.getElementById('app').style.display='flex';
+  errEl.textContent='';
+  initApp();
+  subscribeRealtime();
+  if(!ok) toast("Couldn't reach the cloud — showing your last saved data. Changes will sync once you're back online.");
+  else if(pendingSyncMessage) toast(pendingSyncMessage);
+}
+
 async function doLogin(){
   if(document.getElementById('login-pass').value===PASSWORD){
-    const errEl=document.getElementById('login-err');
-    errEl.style.color=''; errEl.textContent='Loading ranch data…';
-    pendingSyncMessage=null;
-    const ok = await pullState();
-    document.getElementById('login-screen').style.display='none';
-    document.getElementById('app').style.display='flex';
-    errEl.textContent='';
-    initApp();
-    subscribeRealtime();
-    if(!ok) toast("Couldn't reach the cloud — showing your last saved data. Changes will sync once you're back online.");
-    else if(pendingSyncMessage) toast(pendingSyncMessage);
+    try{ localStorage.setItem(REMEMBER_KEY,'1'); }catch(e){}
+    await enterApp();
   } else { document.getElementById('login-err').textContent='Incorrect password.'; document.getElementById('login-pass').value=''; }
 }
+
+function signOut(){
+  if(!confirm('Sign out on this phone? You\'ll need the password next time. Your ranch data stays safe in the cloud.')) return;
+  try{ localStorage.removeItem(REMEMBER_KEY); }catch(e){}
+  location.reload();
+}
+
 document.getElementById('login-pass').addEventListener('keydown',e=>{ if(e.key==='Enter') doLogin(); });
 
 // ═══════════════════════════════════════════════════
@@ -1851,6 +1871,18 @@ function renderLog(){
         </div>
       </div></div></div>`;
   }).join(''):`<div class="empty-state"><div class="empty-icon">📓</div><div class="empty-text">${S.ranch_log.length?'No matches':'Nothing logged yet'}</div><div class="empty-sub">${S.ranch_log.length?'Try another filter':'Hay, supplies, repairs — anything you want a record of'}</div></div>`;
+}
+
+// ═══════════════════════════════════════════════════
+// STAY SIGNED IN
+// Runs last, once everything above is defined. If this phone has signed in
+// before, skip straight past the password screen.
+// ═══════════════════════════════════════════════════
+if(isRemembered()){
+  document.getElementById('login-card').style.display='none';
+  const sub=document.querySelector('#login-screen .login-sub');
+  if(sub) sub.textContent='Welcome back…';
+  enterApp();
 }
 </script>
 </body>
