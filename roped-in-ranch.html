@@ -377,9 +377,9 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sa
       <div class="fg">
         <label class="fl">Photo</label>
         <div class="photo-upload" id="photo-area" onclick="document.getElementById('photo-file').click()">
-          <i class="ti ti-camera"></i><div class="photo-upload-text">Tap to take photo or upload</div>
+          <i class="ti ti-camera"></i><div class="photo-upload-text">Tap to take a photo or choose one</div>
         </div>
-        <input type="file" id="photo-file" accept="image/*" capture="environment" style="display:none" onchange="handlePhoto(event)">
+        <input type="file" id="photo-file" accept="image/*" style="display:none" onchange="handlePhoto(event)">
       </div>
       <div class="form-row">
         <div class="fg"><label class="fl">Name *</label><input class="fi" id="f-name" placeholder="Rosie"></div>
@@ -1191,7 +1191,7 @@ function resetAnimalForm(){
   document.getElementById('f-photo-data').value='';
   document.getElementById('f-health').value='Good';
   document.getElementById('f-status').value='Active';
-  document.getElementById('photo-area').innerHTML='<i class="ti ti-camera"></i><div class="photo-upload-text">Tap to take photo or upload</div>';
+  document.getElementById('photo-area').innerHTML='<i class="ti ti-camera"></i><div class="photo-upload-text">Tap to take a photo or choose one</div>';
   document.getElementById('animal-sheet-title').textContent='Add Animal';
 }
 
@@ -1224,11 +1224,25 @@ function openEditAnimal(){
 
 function toggleDue(sel){ document.getElementById('f-due-group').style.display=sel.value==='Yes'?'block':'none'; }
 
+function showPhotoPreview(url){
+  photoDataUrl=url;
+  document.getElementById('photo-area').innerHTML=`<img src="${url}" class="photo-preview"><div class="photo-upload-text" style="font-size:12px">Tap to change</div>`;
+}
+
 function handlePhoto(e){
-  const f=e.target.files[0]; if(!f) return;
-  const r=new FileReader(); r.onload=ev=>{
+  const input=e.target;
+  const f=input.files[0];
+  // Clear the input so picking the SAME photo again still fires onchange.
+  input.value='';
+  if(!f) return;
+  document.getElementById('photo-area').innerHTML='<i class="ti ti-camera"></i><div class="photo-upload-text">Working on that photo…</div>';
+  const r=new FileReader();
+  r.onerror=()=>{ resetPhotoArea(); toast("Couldn't read that photo — try another one"); };
+  r.onload=ev=>{
     // Resize/compress before storing so a full-resolution phone photo doesn't
-    // bloat the database or slow down syncing between phones.
+    // bloat the database or slow down syncing between phones. This matters most
+    // for pictures chosen from the gallery, which can be far larger than a
+    // fresh camera shot.
     const img=new Image();
     img.onload=()=>{
       const maxDim=900;
@@ -1236,12 +1250,22 @@ function handlePhoto(e){
       const w=Math.round(img.width*scale), h=Math.round(img.height*scale);
       const canvas=document.createElement('canvas'); canvas.width=w; canvas.height=h;
       canvas.getContext('2d').drawImage(img,0,0,w,h);
-      photoDataUrl=canvas.toDataURL('image/jpeg',0.75);
-      document.getElementById('photo-area').innerHTML=`<img src="${photoDataUrl}" class="photo-preview"><div class="photo-upload-text" style="font-size:12px">Tap to change</div>`;
+      let out=canvas.toDataURL('image/jpeg',0.75);
+      // Belt and braces: if it's somehow still heavy, step the quality down.
+      if(out.length>900000) out=canvas.toDataURL('image/jpeg',0.55);
+      showPhotoPreview(out);
     };
-    img.onerror=()=>{ photoDataUrl=ev.target.result; document.getElementById('photo-area').innerHTML=`<img src="${photoDataUrl}" class="photo-preview"><div class="photo-upload-text" style="font-size:12px">Tap to change</div>`; };
+    // If the browser can't decode it (an unusual format from the gallery, say),
+    // say so rather than storing a huge blob that won't display anywhere.
+    img.onerror=()=>{ resetPhotoArea(); toast("That photo format isn't supported — try another one"); };
     img.src=ev.target.result;
-  }; r.readAsDataURL(f);
+  };
+  r.readAsDataURL(f);
+}
+
+function resetPhotoArea(){
+  photoDataUrl=null;
+  document.getElementById('photo-area').innerHTML='<i class="ti ti-camera"></i><div class="photo-upload-text">Tap to take a photo or choose one</div>';
 }
 
 function saveAnimal(){
