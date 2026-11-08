@@ -295,8 +295,16 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sa
           <button class="btn-add" onclick="openSheet('animal-sheet',resetAnimalForm)"><i class="ti ti-plus"></i>Add</button>
         </div>
       </div>
+      <div class="seg-control" id="animal-views">
+        <button class="seg-btn active" onclick="setAnimalView('herd')">Herd</button>
+        <button class="seg-btn" onclick="setAnimalView('sold')">Sold</button>
+        <button class="seg-btn" onclick="setAnimalView('died')">Died</button>
+        <button class="seg-btn" onclick="setAnimalView('butchered')">Butchered</button>
+      </div>
       <div class="search-bar"><div class="search-wrap"><i class="ti ti-search"></i><input class="search-input" type="text" placeholder="Search name or tag…" id="animal-search" oninput="renderAnimals()"></div></div>
       <div class="filter-chips" id="species-chips"></div>
+      <div class="filter-chips" id="year-chips"></div>
+      <div id="animals-summary"></div>
       <div id="animals-list"></div>
     </div>
 
@@ -456,11 +464,22 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sa
       </div>
       <div class="form-row">
         <div class="fg"><label class="fl">Status</label>
-          <select class="fs" id="f-status"><option>Active</option><option>Breeding Stock</option><option>Sold</option><option>Deceased</option></select>
+          <select class="fs" id="f-status" onchange="toggleStatusFields(true)"><option>Active</option><option>Breeding Stock</option><option>Sold</option><option>Deceased</option><option>Butchered</option></select>
         </div>
         <div class="fg"><label class="fl">Pregnant?</label>
           <select class="fs" id="f-pregnant" onchange="toggleDue(this)"><option value="No">No</option><option value="Yes">Yes</option><option value="Unknown">Unknown</option></select>
         </div>
+      </div>
+      <div id="f-sold-group" style="display:none;background:var(--green-pale);border:1px solid #C0DD97;border-radius:var(--radius-sm);padding:12px 12px 0;margin-bottom:14px">
+        <div class="form-row">
+          <div class="fg"><label class="fl">Date Sold</label><input class="fi" type="date" id="f-sold-date"></div>
+          <div class="fg"><label class="fl">Sold For ($)</label><input class="fi" type="number" step="0.01" id="f-sold-price" placeholder="250"></div>
+        </div>
+        <div class="fg"><label class="fl">Buyer</label><input class="fi" id="f-sold-to" placeholder="Jane Smith"></div>
+      </div>
+      <div id="f-died-group" style="display:none;background:var(--red-pale);border:1px solid #F09595;border-radius:var(--radius-sm);padding:12px 12px 0;margin-bottom:14px">
+        <div class="fg"><label class="fl">Date Died</label><input class="fi" type="date" id="f-died-date"></div>
+        <div class="fg"><label class="fl">Cause (if known)</label><input class="fi" id="f-death-cause" placeholder="Weak at birth, bloat, predator…"></div>
       </div>
       <div class="fg" id="f-due-group" style="display:none"><label class="fl">Due Date</label><input class="fi" type="date" id="f-due"></div>
       <div class="fg"><label class="fl">Markings / Description</label><textarea class="ft" id="f-markings" placeholder="White blaze, black left back leg, floppy ear…"></textarea></div>
@@ -861,7 +880,7 @@ const TABLES = ['animals','medical','breeding','feed','milk','products','sales',
 // Only a few fields are named differently in the database (snake_case columns);
 // everything else matches the app's field names exactly.
 const COL_RENAME = {
-  animals:{damId:'dam_id', fosterId:'foster_id'},
+  animals:{damId:'dam_id', fosterId:'foster_id', soldDate:'sold_date', soldPrice:'sold_price', soldTo:'sold_to', diedDate:'died_date', deathCause:'death_cause'},
   medical:{animalId:'animal_id'}, breeding:{animalId:'animal_id'}, feed:{animalId:'animal_id'},
   milk:{animalId:'animal_id'}, reminders:{animalId:'animal_id', doneDate:'done_date'},
   butcher:{animalId:'animal_id', animalName:'animal_name'},
@@ -1155,29 +1174,114 @@ function animalCardHtml(a){
   </div>`;
 }
 
+let animalView='herd', yearFilter='All';
+
+function setAnimalView(v){
+  animalView=v; yearFilter='All';
+  if(specFilter==='__babies__'&&v!=='herd') specFilter='All';
+  renderAnimals();
+}
+function setYearFilter(y){ yearFilter=y; renderAnimals(); }
+function inView(a,v){
+  if(v==='sold') return a.status==='Sold';
+  if(v==='died') return a.status==='Deceased';
+  if(v==='butchered') return a.status==='Butchered';
+  return isAlive(a);
+}
+function butcherRecOf(a){ return S.butcher.filter(b=>b.animalId===a.id).sort((x,y)=>(y.date||'').localeCompare(x.date||''))[0]; }
+// The date that matters for each list: when sold / died / butchered.
+function goneDate(a){
+  if(a.status==='Sold') return a.soldDate||'';
+  if(a.status==='Deceased') return a.diedDate||'';
+  if(a.status==='Butchered') return (butcherRecOf(a)||{}).date||a.diedDate||'';
+  return '';
+}
+function ageAt(dob,date){
+  if(!dob||!date) return '';
+  const days=Math.floor((new Date(date)-new Date(dob))/86400000); if(days<0) return '';
+  if(days<14) return days+(days===1?' day':' days')+' old';
+  if(days<60) return Math.floor(days/7)+' wks old';
+  const mo=Math.floor(days/30.44); return mo<24?mo+' mo old':Math.floor(mo/12)+' yrs old';
+}
+const money=n=>'$'+(+n||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+
+function goneCardHtml(a){
+  const d=goneDate(a);
+  const em=a.photo?`<div class="animal-avatar"><img src="${a.photo}" alt=""></div>`:`<div class="animal-avatar">${specEmoji(a.species)}</div>`;
+  let line='', right='';
+  if(a.status==='Sold'){
+    line=[d?'Sold '+fmt(d):'Sale date not set',a.soldTo?'to '+esc(a.soldTo):''].filter(Boolean).join(' · ');
+    right=a.soldPrice?`<div style="font-weight:700;color:var(--green);font-size:15px;white-space:nowrap">${money(a.soldPrice)}</div>`:`<div style="font-size:12px;color:var(--text3)">No price</div>`;
+  } else if(a.status==='Deceased'){
+    line=[d?'Died '+fmt(d):'Date not set',ageAt(a.dob,d)].filter(Boolean).join(' · ');
+  } else {
+    const b=butcherRecOf(a);
+    line=[d?'Butchered '+fmt(d):'Date not set',b&&b.processed?b.processed+' lbs processed':''].filter(Boolean).join(' · ');
+  }
+  const why=a.status==='Deceased'&&a.deathCause?`<div class="kid-markings">${esc(a.deathCause)}</div>`:'';
+  return `<div class="animal-card" onclick="openDetail('${a.id}')">${em}
+    <div class="animal-info"><div class="animal-name">${esc(a.name)}</div>
+      <div class="animal-meta">${[a.species,a.breed,a.tag].filter(Boolean).join(' · ')}</div>
+      <div style="font-size:13px;color:var(--text2)">${line}</div>${why}</div>
+    ${right}</div>`;
+}
+
 function renderAnimals(){
-  const species=['All',...new Set(S.animals.map(a=>a.species).filter(Boolean))];
-  const babies=S.animals.filter(isBaby);
+  document.querySelectorAll('#animal-views .seg-btn').forEach((b,i)=>b.classList.toggle('active',['herd','sold','died','butchered'][i]===animalView));
+  const inThisView=S.animals.filter(a=>inView(a,animalView));
+  const species=['All',...new Set(inThisView.map(a=>a.species).filter(Boolean))];
+  if(specFilter!=='All'&&specFilter!=='__babies__'&&!species.includes(specFilter)) specFilter='All';
+  const babies=animalView==='herd'?S.animals.filter(isBaby):[];
   if(specFilter==='__babies__'&&!babies.length) specFilter='All';
   document.getElementById('species-chips').innerHTML=
     (babies.length?`<div class="chip${specFilter==='__babies__'?' active':''}" onclick="setSpecFilter('__babies__')">🍼 Babies (${babies.length})</div>`:'')+
     species.map(s=>`<div class="chip${s===specFilter?' active':''}" onclick="setSpecFilter('${s}')">${s}</div>`).join('');
   const q=(document.getElementById('animal-search')?.value||'').toLowerCase();
-  if(specFilter==='__babies__'){ renderBabies(babies,q); return; }
-  const matches=S.animals.filter(a=>(!q||a.name.toLowerCase().includes(q)||(a.tag||'').toLowerCase().includes(q))&&(specFilter==='All'||a.species===specFilter));
-  const goneCount=matches.filter(a=>!isAlive(a)).length;
-  const filtered=showGone?matches:matches.filter(isAlive);
-  filtered.sort(byName);
-  const goneToggle=goneCount?`<div style="text-align:center;padding:10px 16px 4px"><button onclick="toggleGone()" style="background:none;border:none;color:var(--brand-mid);font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;text-decoration:underline">${showGone?'Hide sold & deceased':`Show ${goneCount} sold & deceased`}</button></div>`:'';
-  document.getElementById('animals-list').innerHTML=(filtered.length?filtered.map(animalCardHtml).join(''):`<div class="empty-state"><div class="empty-icon">🐾</div><div class="empty-text">${S.animals.length?'No matches':'No animals yet'}</div><div class="empty-sub">${S.animals.length?(goneCount?'Only sold or deceased animals match':'Try a different filter'):'Tap Add to get started'}</div></div>`)+goneToggle;
+  const yearEl=document.getElementById('year-chips'), sumEl=document.getElementById('animals-summary');
+  if(specFilter==='__babies__'){ yearEl.innerHTML=''; sumEl.innerHTML=''; renderBabies(babies,q); return; }
+  let list=inThisView.filter(a=>(!q||a.name.toLowerCase().includes(q)||(a.tag||'').toLowerCase().includes(q))&&(specFilter==='All'||a.species===specFilter));
+
+  if(animalView==='herd'){
+    yearEl.innerHTML=''; sumEl.innerHTML='';
+    list.sort(byName);
+    document.getElementById('animals-list').innerHTML=list.length?list.map(animalCardHtml).join(''):`<div class="empty-state"><div class="empty-icon">🐾</div><div class="empty-text">${S.animals.length?'No matches':'No animals yet'}</div><div class="empty-sub">${S.animals.length?'Try a different filter':'Tap Add to get started'}</div></div>`;
+    return;
+  }
+
+  // Sold / Died / Butchered: year buttons, a tally, newest first.
+  const years=[...new Set(list.map(a=>(goneDate(a)||'').slice(0,4)).filter(Boolean))].sort().reverse();
+  if(yearFilter!=='All'&&!years.includes(yearFilter)) yearFilter='All';
+  yearEl.innerHTML=years.length?['All',...years].map(y=>`<div class="chip${y===yearFilter?' active':''}" onclick="setYearFilter('${y}')">${y==='All'?'All years':y}</div>`).join(''):'';
+  if(yearFilter!=='All') list=list.filter(a=>(goneDate(a)||'').startsWith(yearFilter));
+  list.sort((x,y)=>goneDate(y).localeCompare(goneDate(x))||byName(x,y));
+  const n=list.length, yr=yearFilter==='All'?'':` in ${yearFilter}`;
+  let sum='';
+  if(animalView==='sold'){
+    const priced=list.filter(a=>+a.soldPrice>0), total=priced.reduce((t,a)=>t+(+a.soldPrice),0);
+    sum=`<div style="font-size:24px;font-weight:700;color:var(--green)">${money(total)}</div><div style="font-size:12px;color:var(--text3)">${n} sold${yr}${priced.length?' · avg '+money(total/priced.length):''}${priced.length<n?` · ${n-priced.length} with no price`:''}</div>`;
+  } else if(animalView==='died'){
+    sum=`<div style="font-size:24px;font-weight:700;color:var(--red)">${n}</div><div style="font-size:12px;color:var(--text3)">died${yr}</div>`;
+  } else {
+    const lbs=list.reduce((t,a)=>t+(+((butcherRecOf(a)||{}).processed)||0),0);
+    sum=`<div style="font-size:24px;font-weight:700;color:var(--brand)">${n}</div><div style="font-size:12px;color:var(--text3)">butchered${yr}${lbs?' · '+lbs+' lbs processed':''}</div>`;
+  }
+  sumEl.innerHTML=n?`<div style="padding:0 16px 10px">${sum}</div>`:'';
+  const emptyMsg={sold:['💵','No sold animals','Set an animal\'s Status to Sold in Edit'],died:['🕊️','No losses recorded','Set an animal\'s Status to Deceased in Edit'],butchered:['🥩','Nothing butchered yet','Butcher records added on the Butcher tab land here']}[animalView];
+  document.getElementById('animals-list').innerHTML=n?list.map(goneCardHtml).join(''):`<div class="empty-state"><div class="empty-icon">${emptyMsg[0]}</div><div class="empty-text">${q||specFilter!=='All'?'No matches':emptyMsg[1]}</div><div class="empty-sub">${q||specFilter!=='All'?'Try a different filter':emptyMsg[2]}</div></div>`;
 }
 
 // A–Z by name; "numeric" keeps Rosie Kid 2 ahead of Rosie Kid 10.
 function byName(a,b){ return (a.name||'').localeCompare(b.name||'',undefined,{numeric:true,sensitivity:'base'}); }
 
-// Sold and deceased animals are hidden from the Animals list unless switched on.
-let showGone=false;
-function toggleGone(){ showGone=!showGone; renderAnimals(); }
+// Edit form: show sale or death details only for that status.
+// fillToday: only when the user just picked the status, never when loading an old record.
+function toggleStatusFields(fillToday){
+  const st=document.getElementById('f-status').value;
+  document.getElementById('f-sold-group').style.display=st==='Sold'?'block':'none';
+  document.getElementById('f-died-group').style.display=st==='Deceased'?'block':'none';
+  if(fillToday&&st==='Sold'&&!document.getElementById('f-sold-date').value) document.getElementById('f-sold-date').value=today();
+  if(fillToday&&st==='Deceased'&&!document.getElementById('f-died-date').value) document.getElementById('f-died-date').value=today();
+}
 
 function setSpecFilter(s){ specFilter=s; renderAnimals(); }
 
@@ -1219,6 +1323,8 @@ function openDetail(id){
       ${a.weight?`<div class="card-row"><span class="card-key">Weight</span><span class="card-val">${a.weight} lbs</span></div>`:''}
       ${a.sire?`<div class="card-row"><span class="card-key">Sire</span><span class="card-val">${a.sire}</span></div>`:''}
       ${a.dam||a.damId?`<div class="card-row"><span class="card-key">Dam</span><span class="card-val">${damLink(a)}</span></div>`:''}
+      ${a.status==='Sold'?`<div class="card-row"><span class="card-key">Sold</span><span class="card-val" style="color:var(--green)">${[a.soldDate?fmt(a.soldDate):'',a.soldPrice?'$'+(+a.soldPrice).toFixed(2):'',a.soldTo?'to '+esc(a.soldTo):''].filter(Boolean).join(' · ')||'—'}</span></div>`:''}
+      ${a.status==='Deceased'?`<div class="card-row"><span class="card-key">Died</span><span class="card-val" style="color:var(--red)">${[a.diedDate?fmt(a.diedDate):'',a.deathCause?esc(a.deathCause):''].filter(Boolean).join(' · ')||'—'}</span></div>`:''}
       ${a.markings?`<div class="card-row" style="flex-direction:column;gap:4px"><span class="card-key">Markings</span><span style="font-size:13px;color:var(--text2);line-height:1.5">${esc(a.markings)}</span></div>`:''}
       ${a.pregnant==='Yes'&&a.due?`<div class="card-row"><span class="card-key">Due Date</span><span class="card-val" style="color:var(--purple)">${fmt(a.due)}</span></div>`:''}
       ${a.notes?`<div class="card-row" style="flex-direction:column;gap:4px"><span class="card-key">Notes</span><span style="font-size:13px;color:var(--text2);line-height:1.5">${a.notes}</span></div>`:''}
@@ -1266,6 +1372,8 @@ function resetAnimalForm(){
   document.getElementById('f-photo-data').value='';
   document.getElementById('f-health').value='Good';
   document.getElementById('f-status').value='Active';
+  ['f-sold-date','f-sold-price','f-sold-to','f-died-date','f-death-cause'].forEach(id=>document.getElementById(id).value='');
+  toggleStatusFields();
   document.getElementById('photo-area').innerHTML='<i class="ti ti-camera"></i><div class="photo-upload-text">Tap to take a photo or choose one</div>';
   document.getElementById('animal-sheet-title').textContent='Add Animal';
 }
@@ -1286,6 +1394,12 @@ function openEditAnimal(){
   document.getElementById('f-sire').value=a.sire||'';
   document.getElementById('f-dam').value=a.dam||'';
   document.getElementById('f-status').value=a.status||'Active';
+  document.getElementById('f-sold-date').value=a.soldDate||'';
+  document.getElementById('f-sold-price').value=a.soldPrice||'';
+  document.getElementById('f-sold-to').value=a.soldTo||'';
+  document.getElementById('f-died-date').value=a.diedDate||'';
+  document.getElementById('f-death-cause').value=a.deathCause||'';
+  toggleStatusFields();
   document.getElementById('f-pregnant').value=a.pregnant||'No';
   document.getElementById('f-due').value=a.due||'';
   document.getElementById('f-due-group').style.display=a.pregnant==='Yes'?'block':'none';
@@ -1365,7 +1479,7 @@ function saveAnimal(){
   // Start from the existing record so fields this form doesn't show (like the
   // link to mom) aren't lost on save.
   const prev=editId?(S.animals.find(a=>a.id===editId)||{}):{};
-  const data={...prev,markings:document.getElementById('f-markings').value.trim(),nursing:document.getElementById('f-nursing').value||null,fosterId:document.getElementById('f-foster-group').style.display==='block'?(document.getElementById('f-foster').value||null):(prev.fosterId||null),id:editId||uid(),name,species,tag:document.getElementById('f-tag').value.trim(),breed:document.getElementById('f-breed').value.trim(),sex:document.getElementById('f-sex').value,dob:document.getElementById('f-dob').value,color:document.getElementById('f-color').value.trim(),health:document.getElementById('f-health').value,weight:document.getElementById('f-weight').value,sire:document.getElementById('f-sire').value.trim(),dam:document.getElementById('f-dam').value.trim(),status:document.getElementById('f-status').value,pregnant:document.getElementById('f-pregnant').value,due:document.getElementById('f-due').value,notes:document.getElementById('f-notes').value.trim(),photo:photoDataUrl||document.getElementById('f-photo-data').value||null,created:editId?(S.animals.find(a=>a.id===editId)?.created||Date.now()):Date.now()};
+  const data={...prev,markings:document.getElementById('f-markings').value.trim(),nursing:document.getElementById('f-nursing').value||null,fosterId:document.getElementById('f-foster-group').style.display==='block'?(document.getElementById('f-foster').value||null):(prev.fosterId||null),id:editId||uid(),name,species,tag:document.getElementById('f-tag').value.trim(),breed:document.getElementById('f-breed').value.trim(),sex:document.getElementById('f-sex').value,dob:document.getElementById('f-dob').value,color:document.getElementById('f-color').value.trim(),health:document.getElementById('f-health').value,weight:document.getElementById('f-weight').value,sire:document.getElementById('f-sire').value.trim(),dam:document.getElementById('f-dam').value.trim(),status:document.getElementById('f-status').value,soldDate:document.getElementById('f-sold-date').value,soldPrice:document.getElementById('f-sold-price').value,soldTo:document.getElementById('f-sold-to').value.trim(),diedDate:document.getElementById('f-died-date').value,deathCause:document.getElementById('f-death-cause').value.trim(),pregnant:document.getElementById('f-pregnant').value,due:document.getElementById('f-due').value,notes:document.getElementById('f-notes').value.trim(),photo:photoDataUrl||document.getElementById('f-photo-data').value||null,created:editId?(S.animals.find(a=>a.id===editId)?.created||Date.now()):Date.now()};
   if(editId){ const i=S.animals.findIndex(a=>a.id===editId); if(i>-1) S.animals[i]=data; } else S.animals.push(data);
   saveState(); closeSheet('animal-sheet'); toast(editId?'Animal updated':'Animal added');
   if(editId&&currentAnimalId===editId) openDetail(editId);
@@ -1600,7 +1714,7 @@ function saveButcher(){
   const a=animalId?S.animals.find(x=>x.id===animalId):null;
   const rec={id:uid(),animalId,animalName:a?a.name:'',date,live:document.getElementById('bk-live').value,hang:document.getElementById('bk-hang').value,processed:document.getElementById('bk-processed').value,purpose:document.getElementById('bk-purpose').value,cuts:document.getElementById('bk-cuts').value.trim(),processor:document.getElementById('bk-processor').value.trim(),notes:document.getElementById('bk-notes').value.trim()};
   S.butcher.push(rec);
-  if(animalId){ const i=S.animals.findIndex(x=>x.id===animalId); if(i>-1) S.animals[i].status='Deceased'; }
+  if(animalId){ const i=S.animals.findIndex(x=>x.id===animalId); if(i>-1) S.animals[i].status='Butchered'; }
   saveState(); closeSheet('butcher-sheet'); toast('Butcher record saved'); renderButcher(); renderAnimals();
 }
 
