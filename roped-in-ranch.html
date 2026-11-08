@@ -214,6 +214,31 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sa
 .companion-box{background:var(--teal-pale);border:1px solid #9FE1CB;border-radius:var(--radius-sm);padding:10px 12px;margin:0 14px 12px;font-size:13px;color:var(--teal)}
 .companion-box strong{display:block;margin-bottom:3px;font-size:11px;letter-spacing:0.5px;text-transform:uppercase}
 
+/* ── BIRTHS / KIDS ── */
+.kid-form-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:12px;margin-bottom:12px}
+.kid-form-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.kid-form-num{font-size:13px;font-weight:700;color:var(--brand-mid);text-transform:uppercase;letter-spacing:0.5px}
+.kid-photo{border:2px dashed var(--border);border-radius:var(--radius-sm);height:110px;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;background:var(--bg);overflow:hidden;color:var(--text3);font-size:13px}
+.kid-photo i{font-size:24px;margin-bottom:4px}
+.kid-photo img{width:100%;height:100%;object-fit:cover}
+.kid-tile{display:flex;gap:10px;align-items:center;padding:10px 14px;border-bottom:1px solid var(--border);cursor:pointer}
+.kid-tile:last-of-type{border-bottom:none}
+.kid-tile:active{background:var(--bg)}
+.kid-thumb{width:58px;height:58px;border-radius:10px;background:var(--brand-pale);display:flex;align-items:center;justify-content:center;font-size:26px;overflow:hidden;flex-shrink:0}
+.kid-thumb img{width:100%;height:100%;object-fit:cover}
+.kid-markings{font-size:12px;color:var(--text2);margin-top:3px;line-height:1.35}
+.nurse-chips{display:flex;gap:6px;flex-wrap:wrap;padding:4px 14px 12px}
+.nurse-chip{border:1px solid var(--border);background:var(--surface);border-radius:14px;padding:5px 10px;font-size:12px;color:var(--text2);cursor:pointer;font-family:inherit}
+.nurse-chip.on-good{background:var(--green-pale);border-color:#C0DD97;color:var(--green);font-weight:700}
+.nurse-chip.on-watch{background:var(--amber-pale);border-color:#F2C98A;color:var(--amber);font-weight:700}
+.nurse-chip.on-bad{background:var(--red-pale);border-color:#F09595;color:var(--red);font-weight:700}
+.nurse-chip.on-bottle{background:var(--blue-pale);border-color:#9CC4EE;color:var(--blue);font-weight:700}
+.birth-banner{display:flex;align-items:center;gap:10px;background:var(--purple-pale);border:1px solid #C9C5F5;color:var(--purple);border-radius:var(--radius);padding:12px 14px;margin-bottom:10px;cursor:pointer;font-weight:700;font-size:15px}
+.birth-banner i{font-size:22px}
+.babies-group{display:flex;align-items:center;gap:8px;padding:12px 16px 8px;cursor:pointer}
+.babies-group .kid-thumb{width:34px;height:34px;font-size:18px;border-radius:8px}
+.babies-group-name{font-size:13px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:0.5px}
+
 /* ── TOAST ── */
 .toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:var(--brand);color:var(--brand-pale);padding:10px 20px;border-radius:20px;font-size:14px;font-weight:600;z-index:999;display:none;white-space:nowrap;pointer-events:none}
 .toast.show{display:block}
@@ -438,6 +463,10 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sa
         </div>
       </div>
       <div class="fg" id="f-due-group" style="display:none"><label class="fl">Due Date</label><input class="fi" type="date" id="f-due"></div>
+      <div class="fg"><label class="fl">Markings / Description</label><textarea class="ft" id="f-markings" placeholder="White blaze, black left back leg, floppy ear…"></textarea></div>
+      <div class="fg" id="f-nursing-group" style="display:none"><label class="fl">Nursing</label>
+        <select class="fs" id="f-nursing"><option value="">—</option><option>Nursing well</option><option>Watch</option><option>Rejected</option><option>Bottle baby</option></select>
+      </div>
       <div class="fg"><label class="fl">Notes</label><textarea class="ft" id="f-notes" placeholder="Additional notes…"></textarea></div>
       <input type="hidden" id="f-id"><input type="hidden" id="f-photo-data">
       <button class="btn-primary" onclick="saveAnimal()">Save Animal</button>
@@ -795,6 +824,23 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sa
   </div>
 </div>
 
+<!-- BIRTH (KIDDING) SHEET -->
+<div class="sheet-overlay" id="birth-sheet">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-header"><div class="sheet-title" id="birth-sheet-title">Record Birth</div><button class="sheet-close" onclick="closeSheet('birth-sheet')">✕</button></div>
+    <div class="sheet-body">
+      <div class="fg"><label class="fl">Birth Date *</label><input class="fi" type="date" id="bt-date"></div>
+      <div id="bt-kids"></div>
+      <button class="add-row-btn" style="margin:0 0 14px;width:100%" onclick="addBirthKid()"><i class="ti ti-plus"></i><span id="bt-add-label">Add Another Baby</span></button>
+      <div style="font-size:12px;color:var(--text3);margin-bottom:10px;line-height:1.4">Each baby is added to the herd and linked to mom. You can rename them any time with Edit.</div>
+      <input type="file" id="kid-photo-file" accept="image/*" style="display:none" onchange="handleKidPhoto(event)">
+      <button class="btn-primary" onclick="saveBirth()" id="bt-save">Save &amp; Add to Herd</button>
+      <button class="btn-secondary" onclick="closeSheet('birth-sheet')">Cancel</button>
+    </div>
+  </div>
+</div>
+
 <script>
 // ═══════════════════════════════════════════════════
 // DATA
@@ -814,6 +860,7 @@ const TABLES = ['animals','medical','breeding','feed','milk','products','sales',
 // Only a few fields are named differently in the database (snake_case columns);
 // everything else matches the app's field names exactly.
 const COL_RENAME = {
+  animals:{damId:'dam_id'},
   medical:{animalId:'animal_id'}, breeding:{animalId:'animal_id'}, feed:{animalId:'animal_id'},
   milk:{animalId:'animal_id'}, reminders:{animalId:'animal_id', doneDate:'done_date'},
   butcher:{animalId:'animal_id', animalName:'animal_name'},
@@ -928,7 +975,7 @@ function renderCurrentView(){
 function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,5); }
 function today(){ return new Date().toISOString().slice(0,10); }
 function fmt(d){ if(!d) return ''; const [y,m,day]=d.split('-'); return `${+m}/${+day}/${y}`; }
-function calcAge(dob){ const d=new Date(dob),n=new Date(); let mo=(n.getFullYear()-d.getFullYear())*12+(n.getMonth()-d.getMonth()); if(mo<0)return ''; return mo<12?mo+'mo':Math.floor(mo/12)+'yr'; }
+function calcAge(dob){ const d=new Date(dob),n=new Date(); const days=Math.floor((n-d)/86400000); if(days>=0&&days<14) return days+'d'; if(days>=14&&days<60) return Math.floor(days/7)+'wk'; let mo=(n.getFullYear()-d.getFullYear())*12+(n.getMonth()-d.getMonth()); if(mo<0)return ''; return mo<12?mo+'mo':Math.floor(mo/12)+'yr'; }
 
 // ═══════════════════════════════════════════════════
 // AUTH
@@ -1099,6 +1146,8 @@ function animalCardHtml(a){
         ${a.pregnant==='Yes'?'<span class="tag tag-purple">Pregnant</span>':a.pregnant==='Unknown'?'<span class="tag tag-amber">Maybe Pregnant</span>':''}
         ${latestBreeding?`<span class="tag ${breedingTagClass(latestBreeding.outcome)}">Bred · ${breedingTagLabel(latestBreeding.outcome)}</span>`:''}
         ${a.status&&a.status!=='Active'?`<span class="tag tag-brand">${a.status}</span>`:''}
+        ${nursingTagHtml(a,true)}
+        ${(a.damId||a.dam)&&isYoung(a,183)?`<span class="tag tag-brand">Dam: ${esc(damName(a))}</span>`:''}
       </div>
     </div>
     <i class="ti ti-chevron-right" style="color:var(--text3);font-size:16px;align-self:center"></i>
@@ -1107,8 +1156,13 @@ function animalCardHtml(a){
 
 function renderAnimals(){
   const species=['All',...new Set(S.animals.map(a=>a.species).filter(Boolean))];
-  document.getElementById('species-chips').innerHTML=species.map(s=>`<div class="chip${s===specFilter?' active':''}" onclick="setSpecFilter('${s}')">${s}</div>`).join('');
+  const babies=S.animals.filter(isBaby);
+  if(specFilter==='__babies__'&&!babies.length) specFilter='All';
+  document.getElementById('species-chips').innerHTML=
+    (babies.length?`<div class="chip${specFilter==='__babies__'?' active':''}" onclick="setSpecFilter('__babies__')">🍼 Babies (${babies.length})</div>`:'')+
+    species.map(s=>`<div class="chip${s===specFilter?' active':''}" onclick="setSpecFilter('${s}')">${s}</div>`).join('');
   const q=(document.getElementById('animal-search')?.value||'').toLowerCase();
+  if(specFilter==='__babies__'){ renderBabies(babies,q); return; }
   const filtered=S.animals.filter(a=>(!q||a.name.toLowerCase().includes(q)||(a.tag||'').toLowerCase().includes(q))&&(specFilter==='All'||a.species===specFilter));
   document.getElementById('animals-list').innerHTML=filtered.length?filtered.map(animalCardHtml).join(''):`<div class="empty-state"><div class="empty-icon">🐾</div><div class="empty-text">${S.animals.length?'No matches':'No animals yet'}</div><div class="empty-sub">${S.animals.length?'Try a different filter':'Tap Add to get started'}</div></div>`;
 }
@@ -1131,6 +1185,7 @@ function openDetail(id){
     <span class="tag ${a.health==='Good'?'tag-green':a.health==='Watch'?'tag-amber':'tag-red'}">${a.health||'Good'}</span>
     ${a.pregnant==='Yes'?'<span class="tag tag-purple">Pregnant</span>':''}
     ${a.status?`<span class="tag tag-brand">${a.status}</span>`:''}
+    ${nursingTagHtml(a,false)}
   `;
   document.getElementById('det-actions').innerHTML=`
     <button class="det-btn primary" onclick="openEditAnimal()"><i class="ti ti-edit"></i>Edit</button>
@@ -1144,16 +1199,20 @@ function openDetail(id){
   const fds=S.feed.filter(f=>f.animalId===id).sort((a,b)=>b.date.localeCompare(a.date));
   const milks=S.milk.filter(m=>m.animalId===id).sort((a,b)=>b.date.localeCompare(a.date));
   document.getElementById('det-content').innerHTML=`
+    ${birthBannerHtml(a)}
     <div class="card" style="margin-bottom:10px">
       <div class="card-header"><div class="card-header-left"><i class="ti ti-info-circle"></i>Profile</div></div>
       ${a.dob?`<div class="card-row"><span class="card-key">Born</span><span class="card-val">${fmt(a.dob)} (${calcAge(a.dob)})</span></div>`:''}
       ${a.color?`<div class="card-row"><span class="card-key">Color</span><span class="card-val">${a.color}</span></div>`:''}
       ${a.weight?`<div class="card-row"><span class="card-key">Weight</span><span class="card-val">${a.weight} lbs</span></div>`:''}
       ${a.sire?`<div class="card-row"><span class="card-key">Sire</span><span class="card-val">${a.sire}</span></div>`:''}
-      ${a.dam?`<div class="card-row"><span class="card-key">Dam</span><span class="card-val">${a.dam}</span></div>`:''}
+      ${a.dam||a.damId?`<div class="card-row"><span class="card-key">Dam</span><span class="card-val">${damLink(a)}</span></div>`:''}
+      ${a.markings?`<div class="card-row" style="flex-direction:column;gap:4px"><span class="card-key">Markings</span><span style="font-size:13px;color:var(--text2);line-height:1.5">${esc(a.markings)}</span></div>`:''}
       ${a.pregnant==='Yes'&&a.due?`<div class="card-row"><span class="card-key">Due Date</span><span class="card-val" style="color:var(--purple)">${fmt(a.due)}</span></div>`:''}
       ${a.notes?`<div class="card-row" style="flex-direction:column;gap:4px"><span class="card-key">Notes</span><span style="font-size:13px;color:var(--text2);line-height:1.5">${a.notes}</span></div>`:''}
     </div>
+    ${momCardHtml(a)}
+    ${kidsCardHtml(a)}
     <div class="card" style="margin-bottom:10px">
       <div class="card-header"><div class="card-header-left"><i class="ti ti-stethoscope"></i>Medical Records</div></div>
       ${med.length?med.map(m=>`<div class="list-item"><div style="display:flex;justify-content:space-between;align-items:flex-start"><div class="list-item-sub">${fmt(m.date)}</div><button onclick="deleteMedical('${m.id}')" style="background:none;border:none;color:var(--text3);font-size:16px;cursor:pointer"><i class="ti ti-trash"></i></button></div><div class="list-item-title">${m.type}${m.provider?' — '+m.provider:''}</div>${m.dose?`<div class="list-item-note">Dose: ${m.dose}</div>`:''} ${m.next?`<div class="list-item-note" style="color:var(--amber)">Next: ${fmt(m.next)}</div>`:''} ${m.notes?`<div class="list-item-note">${m.notes}</div>`:''}</div>`).join(''):`<div class="list-item" style="color:var(--text3);font-size:13px">No records yet</div>`}
@@ -1183,7 +1242,9 @@ let photoDataUrl=null;
 
 function resetAnimalForm(){
   photoDataUrl=null;
-  ['f-name','f-tag','f-breed','f-color','f-notes','f-sire','f-dam','f-weight','f-due','f-species-custom'].forEach(id=>{ const e=document.getElementById(id); if(e) e.value=''; });
+  document.getElementById('f-nursing').value='';
+  document.getElementById('f-nursing-group').style.display='none';
+  ['f-name','f-tag','f-breed','f-color','f-notes','f-markings','f-sire','f-dam','f-weight','f-due','f-species-custom'].forEach(id=>{ const e=document.getElementById(id); if(e) e.value=''; });
   ['f-species','f-sex','f-health','f-status','f-pregnant'].forEach(id=>{ const e=document.getElementById(id); if(e) e.selectedIndex=0; });
   document.getElementById('f-species-custom').style.display='none';
   document.getElementById('f-due-group').style.display='none';
@@ -1215,6 +1276,9 @@ function openEditAnimal(){
   document.getElementById('f-due').value=a.due||'';
   document.getElementById('f-due-group').style.display=a.pregnant==='Yes'?'block':'none';
   document.getElementById('f-notes').value=a.notes||'';
+  document.getElementById('f-markings').value=a.markings||'';
+  document.getElementById('f-nursing').value=a.nursing||'';
+  document.getElementById('f-nursing-group').style.display=(a.damId||a.nursing||isYoung(a,183))?'block':'none';
   document.getElementById('f-id').value=a.id;
   document.getElementById('f-photo-data').value=a.photo||'';
   document.getElementById('animal-sheet-title').textContent='Edit '+a.name;
@@ -1236,8 +1300,14 @@ function handlePhoto(e){
   input.value='';
   if(!f) return;
   document.getElementById('photo-area').innerHTML='<i class="ti ti-camera"></i><div class="photo-upload-text">Working on that photo…</div>';
+  resizeImageFile(f, showPhotoPreview, msg=>{ resetPhotoArea(); toast(msg); });
+}
+
+// Shared by the animal form and the birth form: read a photo file, shrink it
+// to at most 900px / JPEG, then hand back the small data URL.
+function resizeImageFile(f, onDone, onFail){
   const r=new FileReader();
-  r.onerror=()=>{ resetPhotoArea(); toast("Couldn't read that photo — try another one"); };
+  r.onerror=()=>onFail("Couldn't read that photo — try another one");
   r.onload=ev=>{
     // Resize/compress before storing so a full-resolution phone photo doesn't
     // bloat the database or slow down syncing between phones. This matters most
@@ -1253,11 +1323,11 @@ function handlePhoto(e){
       let out=canvas.toDataURL('image/jpeg',0.75);
       // Belt and braces: if it's somehow still heavy, step the quality down.
       if(out.length>900000) out=canvas.toDataURL('image/jpeg',0.55);
-      showPhotoPreview(out);
+      onDone(out);
     };
     // If the browser can't decode it (an unusual format from the gallery, say),
     // say so rather than storing a huge blob that won't display anywhere.
-    img.onerror=()=>{ resetPhotoArea(); toast("That photo format isn't supported — try another one"); };
+    img.onerror=()=>onFail("That photo format isn't supported — try another one");
     img.src=ev.target.result;
   };
   r.readAsDataURL(f);
@@ -1272,7 +1342,10 @@ function saveAnimal(){
   const name=document.getElementById('f-name').value.trim(), species=getSpecies();
   if(!name||!species){ toast('Name and species required'); return; }
   const editId=document.getElementById('f-id').value;
-  const data={id:editId||uid(),name,species,tag:document.getElementById('f-tag').value.trim(),breed:document.getElementById('f-breed').value.trim(),sex:document.getElementById('f-sex').value,dob:document.getElementById('f-dob').value,color:document.getElementById('f-color').value.trim(),health:document.getElementById('f-health').value,weight:document.getElementById('f-weight').value,sire:document.getElementById('f-sire').value.trim(),dam:document.getElementById('f-dam').value.trim(),status:document.getElementById('f-status').value,pregnant:document.getElementById('f-pregnant').value,due:document.getElementById('f-due').value,notes:document.getElementById('f-notes').value.trim(),photo:photoDataUrl||document.getElementById('f-photo-data').value||null,created:editId?(S.animals.find(a=>a.id===editId)?.created||Date.now()):Date.now()};
+  // Start from the existing record so fields this form doesn't show (like the
+  // link to mom) aren't lost on save.
+  const prev=editId?(S.animals.find(a=>a.id===editId)||{}):{};
+  const data={...prev,markings:document.getElementById('f-markings').value.trim(),nursing:document.getElementById('f-nursing').value||null,id:editId||uid(),name,species,tag:document.getElementById('f-tag').value.trim(),breed:document.getElementById('f-breed').value.trim(),sex:document.getElementById('f-sex').value,dob:document.getElementById('f-dob').value,color:document.getElementById('f-color').value.trim(),health:document.getElementById('f-health').value,weight:document.getElementById('f-weight').value,sire:document.getElementById('f-sire').value.trim(),dam:document.getElementById('f-dam').value.trim(),status:document.getElementById('f-status').value,pregnant:document.getElementById('f-pregnant').value,due:document.getElementById('f-due').value,notes:document.getElementById('f-notes').value.trim(),photo:photoDataUrl||document.getElementById('f-photo-data').value||null,created:editId?(S.animals.find(a=>a.id===editId)?.created||Date.now()):Date.now()};
   if(editId){ const i=S.animals.findIndex(a=>a.id===editId); if(i>-1) S.animals[i]=data; } else S.animals.push(data);
   saveState(); closeSheet('animal-sheet'); toast(editId?'Animal updated':'Animal added');
   if(editId&&currentAnimalId===editId) openDetail(editId);
@@ -1895,6 +1968,230 @@ function renderLog(){
         </div>
       </div></div></div>`;
   }).join(''):`<div class="empty-state"><div class="empty-icon">📓</div><div class="empty-text">${S.ranch_log.length?'No matches':'Nothing logged yet'}</div><div class="empty-sub">${S.ranch_log.length?'Try another filter':'Hay, supplies, repairs — anything you want a record of'}</div></div>`;
+}
+
+// ═══════════════════════════════════════════════════
+// BIRTHS — record kidding/lambing/etc., babies join the herd linked to mom
+// ═══════════════════════════════════════════════════
+function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+const POULTRY=['Chicken','Turkey','Duck','Goose','Guinea Fowl','Quail','Peacock','Pheasant','Emu','Ostrich'];
+const BIRTH_WORDS={
+  Goat:{event:'Kidding',baby:'Kid',babies:'Kids',f:'Doeling',m:'Buckling'},
+  Sheep:{event:'Lambing',baby:'Lamb',babies:'Lambs',f:'Ewe lamb',m:'Ram lamb'},
+  Cattle:{event:'Calving',baby:'Calf',babies:'Calves',f:'Heifer calf',m:'Bull calf'},
+  Bison:{event:'Calving',baby:'Calf',babies:'Calves',f:'Heifer calf',m:'Bull calf'},
+  Horse:{event:'Foaling',baby:'Foal',babies:'Foals',f:'Filly',m:'Colt'},
+  Donkey:{event:'Foaling',baby:'Foal',babies:'Foals',f:'Jenny foal',m:'Jack foal'},
+  Pig:{event:'Farrowing',baby:'Piglet',babies:'Piglets',f:'Gilt',m:'Boar'},
+  Rabbit:{event:'Kindling',baby:'Kit',babies:'Kits',f:'Doe',m:'Buck'},
+  Dog:{event:'Whelping',baby:'Puppy',babies:'Puppies',f:'Female',m:'Male'},
+  Cat:{event:'Birth',baby:'Kitten',babies:'Kittens',f:'Female',m:'Male'},
+  'Barn Cat':{event:'Birth',baby:'Kitten',babies:'Kittens',f:'Female',m:'Male'},
+  Llama:{event:'Birth',baby:'Cria',babies:'Crias',f:'Female',m:'Male'},
+  Alpaca:{event:'Birth',baby:'Cria',babies:'Crias',f:'Female',m:'Male'},
+};
+function birthWords(sp){ return BIRTH_WORDS[sp]||{event:'Birth',baby:'Baby',babies:'Babies',f:'Female',m:'Male'}; }
+
+function daysOld(a){ if(!a.dob) return null; return Math.floor((Date.now()-new Date(a.dob))/86400000); }
+function isYoung(a,days){ const d=daysOld(a); return d!==null&&d>=0&&d<=days; }
+function isAlive(a){ return a.status!=='Sold'&&a.status!=='Deceased'&&a.status!=='Butchered'; }
+// "Babies" = born in the last 90 days and still on the place.
+function isBaby(a){ return isYoung(a,90)&&isAlive(a); }
+function damOf(a){ return a.damId?S.animals.find(x=>x.id===a.damId):null; }
+function damName(a){ const m=damOf(a); return m?m.name:(a.dam||'Unknown'); }
+function damLink(a){ const m=damOf(a); return m?`<a onclick="openDetail('${m.id}')" style="color:var(--brand-mid);text-decoration:underline;cursor:pointer">${esc(m.name)}</a>`:esc(a.dam||''); }
+function kidsOf(mom){ return S.animals.filter(k=>k.damId===mom.id).sort((x,y)=>(y.dob||'').localeCompare(x.dob||'')||(x.created||0)-(y.created||0)); }
+function canGiveBirth(a){ return (a.sex||'').startsWith('F')&&!POULTRY.includes(a.species); }
+function thumbHtml(a,cls){ return `<div class="${cls||'kid-thumb'}">${a&&a.photo?`<img src="${a.photo}" alt="">`:specEmoji(a?a.species:'')}</div>`; }
+
+function nursingTagHtml(a,onlyProblems){
+  const n=a.nursing; if(!n) return '';
+  if(n==='Nursing well') return onlyProblems?'':'<span class="tag tag-green">Nursing well</span>';
+  const cls=n==='Rejected'?'tag-red':n==='Watch'?'tag-amber':'tag-blue';
+  return `<span class="tag ${cls}">${n==='Watch'?'Nursing: Watch':n}</span>`;
+}
+
+function birthBannerHtml(a){
+  if(!canGiveBirth(a)) return '';
+  const latest=S.breeding.filter(b=>b.animalId===a.id).sort((x,y)=>y.date.localeCompare(x.date))[0];
+  const expecting=a.pregnant==='Yes'||a.pregnant==='Unknown'||(latest&&['Pending','Confirmed'].includes(latest.outcome));
+  if(!expecting) return '';
+  const W=birthWords(a.species);
+  return `<div class="birth-banner" onclick="openBirthSheet('${a.id}')"><i class="ti ti-baby-carriage"></i><div style="flex:1">Record ${W.event}<div style="font-size:12px;font-weight:500;opacity:0.85">${a.due?'Due '+fmt(a.due)+' · ':''}Add the ${W.babies.toLowerCase()} when they arrive</div></div><i class="ti ti-chevron-right" style="font-size:18px"></i></div>`;
+}
+
+function kidTileHtml(k){
+  const W=birthWords(k.species);
+  const sexLabel=k.sex==='Female'?W.f:k.sex==='Male'?W.m:(k.sex||'');
+  return `<div class="kid-tile" onclick="openDetail('${k.id}')">
+    ${thumbHtml(k)}
+    <div style="flex:1;min-width:0">
+      <div style="font-weight:700;font-size:15px">${esc(k.name)}</div>
+      <div style="font-size:12px;color:var(--text3)">${[sexLabel,k.dob?calcAge(k.dob)+' · born '+fmt(k.dob):'',k.status&&k.status!=='Active'?k.status:''].filter(Boolean).join(' · ')}</div>
+      ${k.markings?`<div class="kid-markings">${esc(k.markings)}</div>`:''}
+      ${k.nursing?`<div style="margin-top:4px">${nursingTagHtml(k,false)}</div>`:''}
+    </div>
+    <i class="ti ti-chevron-right" style="color:var(--text3);font-size:16px"></i>
+  </div>`;
+}
+
+// On mom's page: her babies with photos + markings, for matching in the pen.
+function kidsCardHtml(a){
+  const kids=kidsOf(a);
+  if(!canGiveBirth(a)&&!kids.length) return '';
+  const W=birthWords(a.species);
+  return `<div class="card" style="margin-bottom:10px">
+    <div class="card-header"><div class="card-header-left"><i class="ti ti-baby-carriage"></i>${W.babies}${kids.length?' ('+kids.length+')':''}</div></div>
+    ${kids.length?kids.map(kidTileHtml).join(''):`<div class="list-item" style="color:var(--text3);font-size:13px">No ${W.babies.toLowerCase()} recorded yet</div>`}
+    ${canGiveBirth(a)?`<button class="add-row-btn" onclick="openBirthSheet('${a.id}')"><i class="ti ti-plus"></i>Record ${W.event}</button>`:''}
+  </div>`;
+}
+
+// On a baby's page: mom's photo + markings, littermates, and quick nursing buttons.
+function momCardHtml(a){
+  if(!a.damId&&!a.dam) return '';
+  const young=isYoung(a,365)||!!a.nursing;
+  if(!young) return '';
+  const mom=damOf(a);
+  const sibs=a.damId?S.animals.filter(x=>x.damId===a.damId&&x.id!==a.id&&x.dob&&x.dob===a.dob):[];
+  const showNursing=isYoung(a,183)||!!a.nursing;
+  const opts=[['Nursing well','on-good'],['Watch','on-watch'],['Rejected','on-bad'],['Bottle baby','on-bottle']];
+  return `<div class="card" style="margin-bottom:10px">
+    <div class="card-header"><div class="card-header-left"><i class="ti ti-heart-handshake"></i>Mom</div></div>
+    ${mom?`<div class="kid-tile" onclick="openDetail('${mom.id}')">${thumbHtml(mom)}<div style="flex:1;min-width:0"><div style="font-weight:700;font-size:15px">${esc(mom.name)}</div><div style="font-size:12px;color:var(--text3)">${[mom.breed,mom.tag].filter(Boolean).join(' · ')}</div>${mom.markings?`<div class="kid-markings">${esc(mom.markings)}</div>`:''}</div><i class="ti ti-chevron-right" style="color:var(--text3);font-size:16px"></i></div>`
+      :`<div class="list-item">${esc(a.dam)}</div>`}
+    ${sibs.length?`<div style="padding:8px 14px;font-size:13px;color:var(--text2);border-top:1px solid var(--border)">Born with: ${sibs.map(s=>`<a onclick="openDetail('${s.id}')" style="color:var(--brand-mid);text-decoration:underline;cursor:pointer">${esc(s.name)}</a>`).join(', ')}</div>`:''}
+    ${showNursing?`<div style="padding:10px 14px 4px;font-size:11px;font-weight:700;color:var(--text2);letter-spacing:0.4px;text-transform:uppercase;border-top:1px solid var(--border)">Nursing</div>
+    <div class="nurse-chips">${opts.map(([v,c])=>`<button class="nurse-chip ${a.nursing===v?c:''}" onclick="setNursing('${a.id}','${v}')">${v}</button>`).join('')}</div>`:''}
+  </div>`;
+}
+
+function setNursing(id,val){
+  const k=S.animals.find(x=>x.id===id); if(!k) return;
+  k.nursing=(k.nursing===val)?null:val; // tap the lit one again to clear it
+  saveState(); toast(k.nursing?`${k.name}: ${k.nursing}`:'Nursing cleared');
+  openDetail(id); renderAnimals();
+}
+
+// Animals tab "🍼 Babies" view: grouped under each mom.
+function renderBabies(list,q){
+  if(q) list=list.filter(a=>a.name.toLowerCase().includes(q)||(a.tag||'').toLowerCase().includes(q)||(a.markings||'').toLowerCase().includes(q)||damName(a).toLowerCase().includes(q));
+  const groups={};
+  list.forEach(a=>{ const key=a.damId||('name:'+(a.dam||'')); (groups[key]=groups[key]||[]).push(a); });
+  const keys=Object.keys(groups).sort((x,y)=>{
+    const nx=groups[x].map(a=>a.dob||'').sort().pop(), ny=groups[y].map(a=>a.dob||'').sort().pop();
+    return ny.localeCompare(nx);
+  });
+  document.getElementById('animals-list').innerHTML=keys.length?keys.map(key=>{
+    const kids=groups[key].sort((a,b)=>(a.created||0)-(b.created||0));
+    const mom=kids[0].damId?S.animals.find(x=>x.id===kids[0].damId):null;
+    const W=birthWords(kids[0].species);
+    const title=mom?`${esc(mom.name)}'s ${W.babies.toLowerCase()}`:(kids[0].dam?`${esc(kids[0].dam)}'s ${W.babies.toLowerCase()}`:'Mom not set');
+    return `<div class="babies-group" ${mom?`onclick="openDetail('${mom.id}')"`:''}>${thumbHtml(mom||{species:kids[0].species})}<div class="babies-group-name">${title}</div></div>`+kids.map(animalCardHtml).join('');
+  }).join(''):`<div class="empty-state"><div class="empty-icon">🍼</div><div class="empty-text">No matches</div></div>`;
+}
+
+// ── BIRTH FORM ──
+let birthMomId=null, birthKids=[], birthKidSeq=0, activeKidKey=null;
+
+function openBirthSheet(momId){
+  const mom=S.animals.find(x=>x.id===momId); if(!mom) return;
+  birthMomId=momId; birthKids=[]; birthKidSeq=0; activeKidKey=null;
+  const W=birthWords(mom.species);
+  document.getElementById('birth-sheet-title').textContent=`Record ${W.event} — ${mom.name}`;
+  document.getElementById('bt-add-label').textContent=`Add Another ${W.baby}`;
+  document.getElementById('bt-date').value=today();
+  document.getElementById('bt-kids').innerHTML='';
+  addBirthKid();
+  openSheet('birth-sheet');
+}
+
+function addBirthKid(){
+  const mom=S.animals.find(x=>x.id===birthMomId); if(!mom) return;
+  const W=birthWords(mom.species);
+  const key='k'+(++birthKidSeq);
+  birthKids.push({key,photo:null});
+  // Placeholder name continues from mom's existing babies so it's never a duplicate.
+  const n=kidsOf(mom).length+birthKids.length;
+  const el=document.createElement('div');
+  el.className='kid-form-card'; el.id='kidcard-'+key;
+  el.innerHTML=`
+    <div class="kid-form-head"><span class="kid-form-num"></span>
+      <button onclick="removeBirthKid('${key}')" style="background:none;border:none;color:var(--text3);font-size:18px;cursor:pointer"><i class="ti ti-x"></i></button></div>
+    <div class="kid-photo" id="kidphoto-${key}" onclick="pickKidPhoto('${key}')"><i class="ti ti-camera"></i>Tap to add a photo</div>
+    <div class="fg" style="margin-top:10px"><label class="fl">Name (or temporary name)</label><input class="fi" id="kd-name-${key}"></div>
+    <div class="form-row">
+      <div class="fg"><label class="fl">Sex</label><select class="fs" id="kd-sex-${key}"><option value="">Not sure yet</option><option value="Female">${W.f}</option><option value="Male">${W.m}</option></select></div>
+      <div class="fg"><label class="fl">Nursing</label><select class="fs" id="kd-nurse-${key}"><option>Nursing well</option><option>Watch</option><option>Rejected</option><option>Bottle baby</option><option value="">Not sure yet</option></select></div>
+    </div>
+    <div class="fg" style="margin-bottom:0"><label class="fl">Description / Markings</label><textarea class="ft" id="kd-mark-${key}" placeholder="White blaze, black left back leg, floppy ear…"></textarea></div>`;
+  document.getElementById('bt-kids').appendChild(el);
+  document.getElementById('kd-name-'+key).value=`${mom.name} ${W.baby} ${n}`;
+  renumberBirthKids();
+}
+
+function removeBirthKid(key){
+  if(birthKids.length<=1){ toast('Need at least one'); return; }
+  birthKids=birthKids.filter(k=>k.key!==key);
+  document.getElementById('kidcard-'+key)?.remove();
+  renumberBirthKids();
+}
+
+function renumberBirthKids(){
+  const mom=S.animals.find(x=>x.id===birthMomId);
+  const W=birthWords(mom?mom.species:'');
+  birthKids.forEach((k,i)=>{ const h=document.querySelector(`#kidcard-${k.key} .kid-form-num`); if(h) h.textContent=`${W.baby} ${i+1}`; });
+  document.getElementById('bt-save').textContent=`Save ${birthKids.length} ${birthKids.length===1?W.baby:W.babies} & Add to Herd`;
+}
+
+function pickKidPhoto(key){ activeKidKey=key; document.getElementById('kid-photo-file').click(); }
+
+function handleKidPhoto(e){
+  const input=e.target, f=input.files[0]; input.value='';
+  const key=activeKidKey; if(!f||!key) return;
+  const area=document.getElementById('kidphoto-'+key);
+  area.innerHTML='<i class="ti ti-camera"></i>Working on that photo…';
+  resizeImageFile(f, url=>{
+    const k=birthKids.find(x=>x.key===key); if(k) k.photo=url;
+    area.innerHTML=`<img src="${url}" alt="">`;
+  }, msg=>{ area.innerHTML='<i class="ti ti-camera"></i>Tap to add a photo'; toast(msg); });
+}
+
+function saveBirth(){
+  const mom=S.animals.find(x=>x.id===birthMomId); if(!mom){ toast('Mom not found'); return; }
+  const date=document.getElementById('bt-date').value;
+  if(!date){ toast('Birth date required'); return; }
+  if(!birthKids.length){ toast('Add at least one'); return; }
+  const W=birthWords(mom.species);
+  // Use mom's latest open breeding record for the sire, and mark it as a birth.
+  const latest=S.breeding.filter(b=>b.animalId===mom.id).sort((x,y)=>y.date.localeCompare(x.date))[0];
+  const openRec=latest&&['Pending','Confirmed'].includes(latest.outcome)?latest:null;
+  const sire=(openRec||latest)?.sire||'';
+  const names=[];
+  birthKids.forEach((k,i)=>{
+    const name=document.getElementById('kd-name-'+k.key).value.trim()||`${mom.name} ${W.baby} ${kidsOf(mom).length+1}`;
+    names.push(name);
+    S.animals.push({
+      id:uid(), name, species:mom.species, breed:mom.breed||'', tag:'',
+      sex:document.getElementById('kd-sex-'+k.key).value, dob:date, color:'',
+      markings:document.getElementById('kd-mark-'+k.key).value.trim(),
+      nursing:document.getElementById('kd-nurse-'+k.key).value||null,
+      health:'Good', weight:'', sire, dam:mom.name, damId:mom.id,
+      status:'Active', pregnant:'No', due:'', notes:'', photo:k.photo||null,
+      created:Date.now()+i
+    });
+  });
+  if(openRec){
+    openRec.outcome='Success';
+    openRec.offspring=[openRec.offspring,names.join(', ')].filter(Boolean).join(', ');
+  }
+  mom.pregnant='No'; mom.due='';
+  // Close out the auto-made "Due date — mom" reminder now that she's delivered.
+  S.reminders.forEach(r=>{ if(r.animalId===mom.id&&r.type==='breeding'&&!r.done&&(r.title||'').startsWith('Due date')){ r.done='yes'; r.doneDate=date; } });
+  saveState(); closeSheet('birth-sheet');
+  toast(`${names.length} ${names.length===1?W.baby.toLowerCase():W.babies.toLowerCase()} added to the herd 🎉`);
+  openDetail(mom.id); renderAnimals(); renderHome(); renderReminders(remFilter);
 }
 
 // ═══════════════════════════════════════════════════
