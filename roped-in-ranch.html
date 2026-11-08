@@ -464,6 +464,7 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sa
       </div>
       <div class="fg" id="f-due-group" style="display:none"><label class="fl">Due Date</label><input class="fi" type="date" id="f-due"></div>
       <div class="fg"><label class="fl">Markings / Description</label><textarea class="ft" id="f-markings" placeholder="White blaze, black left back leg, floppy ear…"></textarea></div>
+      <div class="fg" id="f-foster-group" style="display:none"><label class="fl">Raised by (grafted / foster mom)</label><select class="fs" id="f-foster"></select></div>
       <div class="fg" id="f-nursing-group" style="display:none"><label class="fl">Nursing</label>
         <select class="fs" id="f-nursing"><option value="">—</option><option>Nursing well</option><option>Watch</option><option>Rejected</option><option>Bottle baby</option></select>
       </div>
@@ -860,7 +861,7 @@ const TABLES = ['animals','medical','breeding','feed','milk','products','sales',
 // Only a few fields are named differently in the database (snake_case columns);
 // everything else matches the app's field names exactly.
 const COL_RENAME = {
-  animals:{damId:'dam_id'},
+  animals:{damId:'dam_id', fosterId:'foster_id'},
   medical:{animalId:'animal_id'}, breeding:{animalId:'animal_id'}, feed:{animalId:'animal_id'},
   milk:{animalId:'animal_id'}, reminders:{animalId:'animal_id', doneDate:'done_date'},
   butcher:{animalId:'animal_id', animalName:'animal_name'},
@@ -1093,7 +1094,7 @@ function renderHome(){
   const remEl=document.getElementById('home-reminders');
   const upList=upcoming.slice(0,4);
   remEl.innerHTML=upList.length?upList.map(r=>remCardHtml(r,nowD)).join(''):`<div class="empty-state" style="padding:1rem 2rem"><div class="empty-text">No upcoming reminders</div></div>`;
-  const recent=[...S.animals].sort((a,b)=>b.created-a.created).slice(0,3);
+  const recent=S.animals.filter(isAlive).sort((a,b)=>b.created-a.created).slice(0,3);
   document.getElementById('home-animals').innerHTML=recent.length?recent.map(a=>animalCardHtml(a)).join(''):`<div class="empty-state" style="padding:1rem 2rem"><div class="empty-text">No animals yet</div><div class="empty-sub">Tap Animals to get started</div></div>`;
 }
 
@@ -1147,7 +1148,7 @@ function animalCardHtml(a){
         ${latestBreeding?`<span class="tag ${breedingTagClass(latestBreeding.outcome)}">Bred · ${breedingTagLabel(latestBreeding.outcome)}</span>`:''}
         ${a.status&&a.status!=='Active'?`<span class="tag tag-brand">${a.status}</span>`:''}
         ${nursingTagHtml(a,true)}
-        ${(a.damId||a.dam)&&isYoung(a,183)?`<span class="tag tag-brand">Dam: ${esc(damName(a))}</span>`:''}
+        ${(a.damId||a.dam||a.fosterId)&&isYoung(a,183)?`<span class="tag tag-brand">${fosterOf(a)?'Raised by: '+esc(fosterOf(a).name):'Dam: '+esc(damName(a))}</span>`:''}
       </div>
     </div>
     <i class="ti ti-chevron-right" style="color:var(--text3);font-size:16px;align-self:center"></i>
@@ -1163,9 +1164,20 @@ function renderAnimals(){
     species.map(s=>`<div class="chip${s===specFilter?' active':''}" onclick="setSpecFilter('${s}')">${s}</div>`).join('');
   const q=(document.getElementById('animal-search')?.value||'').toLowerCase();
   if(specFilter==='__babies__'){ renderBabies(babies,q); return; }
-  const filtered=S.animals.filter(a=>(!q||a.name.toLowerCase().includes(q)||(a.tag||'').toLowerCase().includes(q))&&(specFilter==='All'||a.species===specFilter));
-  document.getElementById('animals-list').innerHTML=filtered.length?filtered.map(animalCardHtml).join(''):`<div class="empty-state"><div class="empty-icon">🐾</div><div class="empty-text">${S.animals.length?'No matches':'No animals yet'}</div><div class="empty-sub">${S.animals.length?'Try a different filter':'Tap Add to get started'}</div></div>`;
+  const matches=S.animals.filter(a=>(!q||a.name.toLowerCase().includes(q)||(a.tag||'').toLowerCase().includes(q))&&(specFilter==='All'||a.species===specFilter));
+  const goneCount=matches.filter(a=>!isAlive(a)).length;
+  const filtered=showGone?matches:matches.filter(isAlive);
+  filtered.sort(byName);
+  const goneToggle=goneCount?`<div style="text-align:center;padding:10px 16px 4px"><button onclick="toggleGone()" style="background:none;border:none;color:var(--brand-mid);font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;text-decoration:underline">${showGone?'Hide sold & deceased':`Show ${goneCount} sold & deceased`}</button></div>`:'';
+  document.getElementById('animals-list').innerHTML=(filtered.length?filtered.map(animalCardHtml).join(''):`<div class="empty-state"><div class="empty-icon">🐾</div><div class="empty-text">${S.animals.length?'No matches':'No animals yet'}</div><div class="empty-sub">${S.animals.length?(goneCount?'Only sold or deceased animals match':'Try a different filter'):'Tap Add to get started'}</div></div>`)+goneToggle;
 }
+
+// A–Z by name; "numeric" keeps Rosie Kid 2 ahead of Rosie Kid 10.
+function byName(a,b){ return (a.name||'').localeCompare(b.name||'',undefined,{numeric:true,sensitivity:'base'}); }
+
+// Sold and deceased animals are hidden from the Animals list unless switched on.
+let showGone=false;
+function toggleGone(){ showGone=!showGone; renderAnimals(); }
 
 function setSpecFilter(s){ specFilter=s; renderAnimals(); }
 
@@ -1244,6 +1256,8 @@ function resetAnimalForm(){
   photoDataUrl=null;
   document.getElementById('f-nursing').value='';
   document.getElementById('f-nursing-group').style.display='none';
+  document.getElementById('f-foster').innerHTML='';
+  document.getElementById('f-foster-group').style.display='none';
   ['f-name','f-tag','f-breed','f-color','f-notes','f-markings','f-sire','f-dam','f-weight','f-due','f-species-custom'].forEach(id=>{ const e=document.getElementById(id); if(e) e.value=''; });
   ['f-species','f-sex','f-health','f-status','f-pregnant'].forEach(id=>{ const e=document.getElementById(id); if(e) e.selectedIndex=0; });
   document.getElementById('f-species-custom').style.display='none';
@@ -1279,6 +1293,12 @@ function openEditAnimal(){
   document.getElementById('f-markings').value=a.markings||'';
   document.getElementById('f-nursing').value=a.nursing||'';
   document.getElementById('f-nursing-group').style.display=(a.damId||a.nursing||isYoung(a,183))?'block':'none';
+  if(a.damId||a.fosterId||isYoung(a,183)){
+    const does=S.animals.filter(x=>x.id!==a.id&&x.id!==a.damId&&x.species===a.species&&canGiveBirth(x)&&isAlive(x)).sort(byName);
+    document.getElementById('f-foster').innerHTML=`<option value="">${a.damId||a.dam?'Birth mom ('+esc(damName(a))+')':'— Not grafted —'}</option>`+does.map(x=>`<option value="${x.id}">${esc(x.name)}</option>`).join('');
+    document.getElementById('f-foster').value=fosterOf(a)?a.fosterId:'';
+    document.getElementById('f-foster-group').style.display='block';
+  }
   document.getElementById('f-id').value=a.id;
   document.getElementById('f-photo-data').value=a.photo||'';
   document.getElementById('animal-sheet-title').textContent='Edit '+a.name;
@@ -1345,7 +1365,7 @@ function saveAnimal(){
   // Start from the existing record so fields this form doesn't show (like the
   // link to mom) aren't lost on save.
   const prev=editId?(S.animals.find(a=>a.id===editId)||{}):{};
-  const data={...prev,markings:document.getElementById('f-markings').value.trim(),nursing:document.getElementById('f-nursing').value||null,id:editId||uid(),name,species,tag:document.getElementById('f-tag').value.trim(),breed:document.getElementById('f-breed').value.trim(),sex:document.getElementById('f-sex').value,dob:document.getElementById('f-dob').value,color:document.getElementById('f-color').value.trim(),health:document.getElementById('f-health').value,weight:document.getElementById('f-weight').value,sire:document.getElementById('f-sire').value.trim(),dam:document.getElementById('f-dam').value.trim(),status:document.getElementById('f-status').value,pregnant:document.getElementById('f-pregnant').value,due:document.getElementById('f-due').value,notes:document.getElementById('f-notes').value.trim(),photo:photoDataUrl||document.getElementById('f-photo-data').value||null,created:editId?(S.animals.find(a=>a.id===editId)?.created||Date.now()):Date.now()};
+  const data={...prev,markings:document.getElementById('f-markings').value.trim(),nursing:document.getElementById('f-nursing').value||null,fosterId:document.getElementById('f-foster-group').style.display==='block'?(document.getElementById('f-foster').value||null):(prev.fosterId||null),id:editId||uid(),name,species,tag:document.getElementById('f-tag').value.trim(),breed:document.getElementById('f-breed').value.trim(),sex:document.getElementById('f-sex').value,dob:document.getElementById('f-dob').value,color:document.getElementById('f-color').value.trim(),health:document.getElementById('f-health').value,weight:document.getElementById('f-weight').value,sire:document.getElementById('f-sire').value.trim(),dam:document.getElementById('f-dam').value.trim(),status:document.getElementById('f-status').value,pregnant:document.getElementById('f-pregnant').value,due:document.getElementById('f-due').value,notes:document.getElementById('f-notes').value.trim(),photo:photoDataUrl||document.getElementById('f-photo-data').value||null,created:editId?(S.animals.find(a=>a.id===editId)?.created||Date.now()):Date.now()};
   if(editId){ const i=S.animals.findIndex(a=>a.id===editId); if(i>-1) S.animals[i]=data; } else S.animals.push(data);
   saveState(); closeSheet('animal-sheet'); toast(editId?'Animal updated':'Animal added');
   if(editId&&currentAnimalId===editId) openDetail(editId);
@@ -1486,7 +1506,7 @@ function renderSales(context){
 function openMilkSheet(){
   const sel=document.getElementById('ml-animal');
   const dairyAnimals=S.animals.filter(a=>['Goat','Sheep','Cattle'].includes(a.species));
-  sel.innerHTML='<option value="">Select animal…</option>'+dairyAnimals.map(a=>`<option value="${a.id}">${a.name}</option>`).join('');
+  sel.innerHTML='<option value="">Select animal…</option>'+dairyAnimals.sort(byName).map(a=>`<option value="${a.id}">${a.name}</option>`).join('');
   document.getElementById('ml-date').value=today();
   document.getElementById('ml-qty').value='';
   document.getElementById('ml-notes').value='';
@@ -1567,7 +1587,7 @@ function renderFreezer(){
 
 function openButcherSheet(){
   const sel=document.getElementById('bk-animal');
-  sel.innerHTML='<option value="">Select animal…</option>'+S.animals.filter(a=>a.status==='Active'||a.status==='Breeding Stock').map(a=>`<option value="${a.id}">${a.name} (${a.species})</option>`).join('');
+  sel.innerHTML='<option value="">Select animal…</option>'+S.animals.filter(a=>a.status==='Active'||a.status==='Breeding Stock').sort(byName).map(a=>`<option value="${a.id}">${a.name} (${a.species})</option>`).join('');
   ['bk-live','bk-hang','bk-processed','bk-cuts','bk-processor','bk-notes'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('bk-date').value=today();
   document.getElementById('bk-purpose').selectedIndex=0;
@@ -1776,7 +1796,7 @@ function resetReminderForm(){
   document.getElementById('r-type').selectedIndex=0;
   document.getElementById('r-due').value='';
   const sel=document.getElementById('r-animal');
-  sel.innerHTML='<option value="">— No specific animal —</option>'+S.animals.map(a=>`<option value="${a.id}">${a.name} (${a.species})</option>`).join('');
+  sel.innerHTML='<option value="">— No specific animal —</option>'+[...S.animals].sort(byName).map(a=>`<option value="${a.id}">${a.name} (${a.species})</option>`).join('');
 }
 
 function saveReminder(){
@@ -1893,7 +1913,7 @@ function resetLogForm(){
   document.getElementById('g-date').value=today();
   document.getElementById('log-sheet-title').textContent='Log Entry';
   const sel=document.getElementById('g-animal');
-  sel.innerHTML='<option value="">— Not animal-specific —</option>'+S.animals.map(a=>`<option value="${a.id}">${a.name} (${a.species||''})</option>`).join('');
+  sel.innerHTML='<option value="">— Not animal-specific —</option>'+[...S.animals].sort(byName).map(a=>`<option value="${a.id}">${a.name} (${a.species||''})</option>`).join('');
 }
 
 function editLog(id){
@@ -2001,7 +2021,12 @@ function isBaby(a){ return isYoung(a,90)&&isAlive(a); }
 function damOf(a){ return a.damId?S.animals.find(x=>x.id===a.damId):null; }
 function damName(a){ const m=damOf(a); return m?m.name:(a.dam||'Unknown'); }
 function damLink(a){ const m=damOf(a); return m?`<a onclick="openDetail('${m.id}')" style="color:var(--brand-mid);text-decoration:underline;cursor:pointer">${esc(m.name)}</a>`:esc(a.dam||''); }
-function kidsOf(mom){ return S.animals.filter(k=>k.damId===mom.id).sort((x,y)=>(y.dob||'').localeCompare(x.dob||'')||(x.created||0)-(y.created||0)); }
+// The doe actually raising a grafted baby (if it's been moved to another mom).
+function fosterOf(a){ return a.fosterId&&a.fosterId!==a.damId?S.animals.find(x=>x.id===a.fosterId)||null:null; }
+function raiserOf(a){ return fosterOf(a)||damOf(a); }
+function raiserName(a){ const f=fosterOf(a); return f?f.name:damName(a); }
+// birthOnly=true: just the babies she gave birth to (used for naming).
+function kidsOf(mom,birthOnly){ return S.animals.filter(k=>k.damId===mom.id||(!birthOnly&&k.fosterId===mom.id)).sort((x,y)=>(y.dob||'').localeCompare(x.dob||'')||(x.created||0)-(y.created||0)); }
 function canGiveBirth(a){ return (a.sex||'').startsWith('F')&&!POULTRY.includes(a.species); }
 function thumbHtml(a,cls){ return `<div class="${cls||'kid-thumb'}">${a&&a.photo?`<img src="${a.photo}" alt="">`:specEmoji(a?a.species:'')}</div>`; }
 
@@ -2021,7 +2046,9 @@ function birthBannerHtml(a){
   return `<div class="birth-banner" onclick="openBirthSheet('${a.id}')"><i class="ti ti-baby-carriage"></i><div style="flex:1">Record ${W.event}<div style="font-size:12px;font-weight:500;opacity:0.85">${a.due?'Due '+fmt(a.due)+' · ':''}Add the ${W.babies.toLowerCase()} when they arrive</div></div><i class="ti ti-chevron-right" style="font-size:18px"></i></div>`;
 }
 
-function kidTileHtml(k){
+function kidTileHtml(k,mom){
+  const f=fosterOf(k);
+  const graft=mom&&f&&f.id===mom.id?`<span class="tag tag-teal">Grafted from ${esc(damName(k))}</span>`:mom&&f&&k.damId===mom.id?`<span class="tag tag-teal">Raised by ${esc(f.name)}</span>`:'';
   const W=birthWords(k.species);
   const sexLabel=k.sex==='Female'?W.f:k.sex==='Male'?W.m:(k.sex||'');
   return `<div class="kid-tile" onclick="openDetail('${k.id}')">
@@ -2030,7 +2057,7 @@ function kidTileHtml(k){
       <div style="font-weight:700;font-size:15px">${esc(k.name)}</div>
       <div style="font-size:12px;color:var(--text3)">${[sexLabel,k.dob?calcAge(k.dob)+' · born '+fmt(k.dob):'',k.status&&k.status!=='Active'?k.status:''].filter(Boolean).join(' · ')}</div>
       ${k.markings?`<div class="kid-markings">${esc(k.markings)}</div>`:''}
-      ${k.nursing?`<div style="margin-top:4px">${nursingTagHtml(k,false)}</div>`:''}
+      ${k.nursing||graft?`<div class="tags-row" style="margin-top:4px">${graft}${nursingTagHtml(k,false)}</div>`:''}
     </div>
     <i class="ti ti-chevron-right" style="color:var(--text3);font-size:16px"></i>
   </div>`;
@@ -2043,27 +2070,30 @@ function kidsCardHtml(a){
   const W=birthWords(a.species);
   return `<div class="card" style="margin-bottom:10px">
     <div class="card-header"><div class="card-header-left"><i class="ti ti-baby-carriage"></i>${W.babies}${kids.length?' ('+kids.length+')':''}</div></div>
-    ${kids.length?kids.map(kidTileHtml).join(''):`<div class="list-item" style="color:var(--text3);font-size:13px">No ${W.babies.toLowerCase()} recorded yet</div>`}
+    ${kids.length?kids.map(k=>kidTileHtml(k,a)).join(''):`<div class="list-item" style="color:var(--text3);font-size:13px">No ${W.babies.toLowerCase()} recorded yet</div>`}
     ${canGiveBirth(a)?`<button class="add-row-btn" onclick="openBirthSheet('${a.id}')"><i class="ti ti-plus"></i>Record ${W.event}</button>`:''}
   </div>`;
 }
 
 // On a baby's page: mom's photo + markings, littermates, and quick nursing buttons.
 function momCardHtml(a){
-  if(!a.damId&&!a.dam) return '';
-  const young=isYoung(a,365)||!!a.nursing;
+  if(!a.damId&&!a.dam&&!a.fosterId) return '';
+  const young=isYoung(a,365)||!!a.nursing||!!a.fosterId;
   if(!young) return '';
-  const mom=damOf(a);
+  const mom=damOf(a), foster=fosterOf(a);
+  const lbl=t=>`<div style="padding:10px 14px 0;font-size:11px;font-weight:700;color:var(--text3);letter-spacing:0.4px;text-transform:uppercase">${t}</div>`;
+  const tile=m=>`<div class="kid-tile" onclick="openDetail('${m.id}')">${thumbHtml(m)}<div style="flex:1;min-width:0"><div style="font-weight:700;font-size:15px">${esc(m.name)}</div><div style="font-size:12px;color:var(--text3)">${[m.breed,m.tag].filter(Boolean).join(' · ')}</div>${m.markings?`<div class="kid-markings">${esc(m.markings)}</div>`:''}</div><i class="ti ti-chevron-right" style="color:var(--text3);font-size:16px"></i></div>`;
   const sibs=a.damId?S.animals.filter(x=>x.damId===a.damId&&x.id!==a.id&&x.dob&&x.dob===a.dob):[];
   const showNursing=isYoung(a,183)||!!a.nursing;
   const opts=[['Nursing well','on-good'],['Watch','on-watch'],['Rejected','on-bad'],['Bottle baby','on-bottle']];
   return `<div class="card" style="margin-bottom:10px">
     <div class="card-header"><div class="card-header-left"><i class="ti ti-heart-handshake"></i>Mom</div></div>
-    ${mom?`<div class="kid-tile" onclick="openDetail('${mom.id}')">${thumbHtml(mom)}<div style="flex:1;min-width:0"><div style="font-weight:700;font-size:15px">${esc(mom.name)}</div><div style="font-size:12px;color:var(--text3)">${[mom.breed,mom.tag].filter(Boolean).join(' · ')}</div>${mom.markings?`<div class="kid-markings">${esc(mom.markings)}</div>`:''}</div><i class="ti ti-chevron-right" style="color:var(--text3);font-size:16px"></i></div>`
-      :`<div class="list-item">${esc(a.dam)}</div>`}
+    ${foster?lbl('Raised by (grafted)')+tile(foster)+lbl('Birth mom'):''}
+    ${mom?tile(mom):(a.dam?`<div class="list-item">${esc(a.dam)}</div>`:'')}
     ${sibs.length?`<div style="padding:8px 14px;font-size:13px;color:var(--text2);border-top:1px solid var(--border)">Born with: ${sibs.map(s=>`<a onclick="openDetail('${s.id}')" style="color:var(--brand-mid);text-decoration:underline;cursor:pointer">${esc(s.name)}</a>`).join(', ')}</div>`:''}
     ${showNursing?`<div style="padding:10px 14px 4px;font-size:11px;font-weight:700;color:var(--text2);letter-spacing:0.4px;text-transform:uppercase;border-top:1px solid var(--border)">Nursing</div>
     <div class="nurse-chips">${opts.map(([v,c])=>`<button class="nurse-chip ${a.nursing===v?c:''}" onclick="setNursing('${a.id}','${v}')">${v}</button>`).join('')}</div>`:''}
+    <button class="add-row-btn" onclick="openEditAnimal()"><i class="ti ti-arrows-exchange"></i>${foster?'Change who\'s raising it':'Graft to another mom'}</button>
   </div>`;
 }
 
@@ -2076,16 +2106,16 @@ function setNursing(id,val){
 
 // Animals tab "🍼 Babies" view: grouped under each mom.
 function renderBabies(list,q){
-  if(q) list=list.filter(a=>a.name.toLowerCase().includes(q)||(a.tag||'').toLowerCase().includes(q)||(a.markings||'').toLowerCase().includes(q)||damName(a).toLowerCase().includes(q));
+  if(q) list=list.filter(a=>a.name.toLowerCase().includes(q)||(a.tag||'').toLowerCase().includes(q)||(a.markings||'').toLowerCase().includes(q)||damName(a).toLowerCase().includes(q)||raiserName(a).toLowerCase().includes(q));
   const groups={};
-  list.forEach(a=>{ const key=a.damId||('name:'+(a.dam||'')); (groups[key]=groups[key]||[]).push(a); });
+  list.forEach(a=>{ const r=raiserOf(a); const key=r?r.id:('name:'+(a.dam||'')); (groups[key]=groups[key]||[]).push(a); });
   const keys=Object.keys(groups).sort((x,y)=>{
     const nx=groups[x].map(a=>a.dob||'').sort().pop(), ny=groups[y].map(a=>a.dob||'').sort().pop();
     return ny.localeCompare(nx);
   });
   document.getElementById('animals-list').innerHTML=keys.length?keys.map(key=>{
-    const kids=groups[key].sort((a,b)=>(a.created||0)-(b.created||0));
-    const mom=kids[0].damId?S.animals.find(x=>x.id===kids[0].damId):null;
+    const kids=groups[key].sort(byName);
+    const mom=raiserOf(kids[0]);
     const W=birthWords(kids[0].species);
     const title=mom?`${esc(mom.name)}'s ${W.babies.toLowerCase()}`:(kids[0].dam?`${esc(kids[0].dam)}'s ${W.babies.toLowerCase()}`:'Mom not set');
     return `<div class="babies-group" ${mom?`onclick="openDetail('${mom.id}')"`:''}>${thumbHtml(mom||{species:kids[0].species})}<div class="babies-group-name">${title}</div></div>`+kids.map(animalCardHtml).join('');
@@ -2113,7 +2143,7 @@ function addBirthKid(){
   const key='k'+(++birthKidSeq);
   birthKids.push({key,photo:null});
   // Placeholder name continues from mom's existing babies so it's never a duplicate.
-  const n=kidsOf(mom).length+birthKids.length;
+  const n=kidsOf(mom,true).length+birthKids.length;
   const el=document.createElement('div');
   el.className='kid-form-card'; el.id='kidcard-'+key;
   el.innerHTML=`
@@ -2170,7 +2200,7 @@ function saveBirth(){
   const sire=(openRec||latest)?.sire||'';
   const names=[];
   birthKids.forEach((k,i)=>{
-    const name=document.getElementById('kd-name-'+k.key).value.trim()||`${mom.name} ${W.baby} ${kidsOf(mom).length+1}`;
+    const name=document.getElementById('kd-name-'+k.key).value.trim()||`${mom.name} ${W.baby} ${kidsOf(mom,true).length+1}`;
     names.push(name);
     S.animals.push({
       id:uid(), name, species:mom.species, breed:mom.breed||'', tag:'',
