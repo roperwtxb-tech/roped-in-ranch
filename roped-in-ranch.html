@@ -1465,14 +1465,16 @@ function resizeImageFile(f, onDone, onFail){
     // fresh camera shot.
     const img=new Image();
     img.onload=()=>{
-      const maxDim=900;
+      // 640px is plenty to tell animals apart on a phone, and keeps each photo
+      // around 60-120 KB so syncing stays quick on a weak cell signal.
+      const maxDim=640;
       const scale=Math.min(1, maxDim/Math.max(img.width,img.height));
       const w=Math.round(img.width*scale), h=Math.round(img.height*scale);
       const canvas=document.createElement('canvas'); canvas.width=w; canvas.height=h;
       canvas.getContext('2d').drawImage(img,0,0,w,h);
-      let out=canvas.toDataURL('image/jpeg',0.75);
+      let out=canvas.toDataURL('image/jpeg',0.6);
       // Belt and braces: if it's somehow still heavy, step the quality down.
-      if(out.length>900000) out=canvas.toDataURL('image/jpeg',0.55);
+      if(out.length>200000) out=canvas.toDataURL('image/jpeg',0.45);
       onDone(out);
     };
     // If the browser can't decode it (an unusual format from the gallery, say),
