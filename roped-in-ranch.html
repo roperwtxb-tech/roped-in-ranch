@@ -874,7 +874,12 @@ let S = { animals:[], medical:[], breeding:[], feed:[], milk:[], products:[], sa
 // so the anon key below is deliberately allowed full read/write access.
 const SUPABASE_URL = 'https://hrtuhexblsbdjfdbfblg.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhydHVoZXhibHNiZGpmZGJmYmxnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQxMzg2MjAsImV4cCI6MjA5OTcxNDYyMH0.UuG4vU-qqcEs7LffzhgDqb2tVBq9RaeR1gwhvOpJXvs';
-const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+// Never pick up a sign-in from Sean's other apps on this same web address
+// (Keepsake Vault, prepping app); those share this Supabase project and a
+// signed-in session made ranch saves fail with "403 not allowed".
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+  auth:{ persistSession:false, autoRefreshToken:false, detectSessionInUrl:false, storageKey:'rir-ranch-noauth' }
+});
 
 const TABLES = ['animals','medical','breeding','feed','milk','products','sales','butcher','freezer','beds','seeds','harvest','reminders','ranch_log'];
 // Only a few fields are named differently in the database (snake_case columns);
@@ -894,7 +899,18 @@ let syncInFlight = false, syncQueued = false;
 let pendingSyncMessage = null; // set by pullState(), shown by doLogin() once the app is visible
 
 function loadState(){ try{ const d=localStorage.getItem('rir2'); if(d) S=Object.assign(S,JSON.parse(d)); }catch(e){} }
-function cacheState(){ localStorage.setItem('rir2',JSON.stringify(S)); }
+// The phone's offline copy. Phone storage is small (~5 MB), so once there are
+// lots of photos, fall back to caching everything except the photos rather
+// than throwing an error that would stop the save from reaching the cloud.
+function cacheState(){
+  try{ localStorage.setItem('rir2',JSON.stringify(S)); }
+  catch(e){
+    try{
+      const lite={...S, animals:S.animals.map(a=>a.photo?{...a,photo:null}:a)};
+      localStorage.setItem('rir2',JSON.stringify(lite));
+    }catch(e2){ console.warn('Offline copy not saved:',e2); }
+  }
+}
 
 // Pull everything down from Supabase (used on login). Falls back to the local
 // cache if there's no connection, so the app still works offline.
