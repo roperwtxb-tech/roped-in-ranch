@@ -894,9 +894,20 @@ const COL_RENAME = {
 function toDb(table,obj){ const map=COL_RENAME[table]||{}; const out={}; for(const k in obj){ if(obj[k]===undefined) continue; out[map[k]||k]=obj[k]; } return out; }
 function fromDb(table,row){ const map=COL_RENAME[table]||{}; const inv={}; for(const k in map) inv[map[k]]=k; const out={}; for(const k in row){ if(k==='updated_at') continue; out[inv[k]||k]=row[k]; } return out; }
 
-let lastSyncedIds = {};    // table -> Set of ids known to be on the server, used to detect local deletes
-let syncInFlight = false, syncQueued = false;
+// What each row looked like the last time it was in step with the cloud, so a
+// save only uploads rows that actually changed. (Uploading the whole animals
+// table, photos and all, on every save got slow enough to time out.)
+let synced = {};           // table -> Map(id -> fingerprint of the row as last synced)
+let syncInFlight = false, syncQueued = false, syncRetryTimer = null, syncWarned = false;
 let pendingSyncMessage = null; // set by pullState(), shown by doLogin() once the app is visible
+
+// A row's fingerprint: its database fields in a fixed order, ignoring blanks,
+// so the same data always gives the same fingerprint.
+function rowKey(t,row){
+  const o=toDb(t,row), ks=Object.keys(o).filter(k=>o[k]!==null&&o[k]!==''&&k!=='updated_at').sort();
+  return JSON.stringify(ks.map(k=>[k,String(o[k])]));
+}
+function markSynced(t,rows){ synced[t]=new Map(rows.map(r=>[r.id,rowKey(t,r)])); }
 
 function loadState(){ try{ const d=localStorage.getItem('rir2'); if(d) S=Object.assign(S,JSON.parse(d)); }catch(e){} }
 // The phone's offline copy. Phone storage is small (~5 MB), so once there are
@@ -917,9 +928,7 @@ function cacheState(){
 //
 // First-run migration: if this device has existing data saved locally (from
 // before cloud sync existed) but the cloud database is still empty, push the
-// local data up instead of overwriting it with nothing. This only matters
-// once — after the first device seeds the cloud, every device (including
-// this one) just pulls the shared data normally from then on.
+// local data up instead of overwriting it with nothing.
 async function pullState(){
   try{
     const remote = {};
@@ -935,14 +944,13 @@ async function pullState(){
     const localTotal = TABLES.reduce((sum,t)=>sum+(S[t]?.length||0),0);
 
     if(remoteTotal===0 && localTotal>0){
-      // Cloud is empty but this device has local data — seed the cloud from here.
-      for(const t of TABLES) lastSyncedIds[t] = new Set();
+      for(const t of TABLES) synced[t] = new Map();
       await pushState();
       pendingSyncMessage = 'Uploaded your existing ranch data to the cloud';
     } else {
       for(const t of TABLES){
         S[t] = remote[t].map(r=>fromDb(t,r));
-        lastSyncedIds[t] = new Set(remote[t].map(r=>r.id));
+        markSynced(t,S[t]);
       }
     }
     cacheState();
@@ -954,51 +962,84 @@ async function pullState(){
   }
 }
 
-// Push local changes up to Supabase: upsert every row currently in S, and
-// delete any row that used to be there but is gone now (covers every add/
-// edit/delete pattern in the app without having to touch each call site).
+// Push local changes up to Supabase: only rows that are new or changed since the
+// last sync, a few at a time, plus deletes for rows that are gone. Anything that
+// fails stays "unsynced" and is retried automatically, with a heads-up on screen.
 async function pushState(){
   if(syncInFlight){ syncQueued=true; return; }
   syncInFlight=true;
+  let failed=false;
   try{
     for(const t of TABLES){
+      const map = synced[t] || (synced[t]=new Map());
       const rows = S[t]||[];
-      const currentIds = new Set(rows.map(r=>r.id));
-      const prevIds = lastSyncedIds[t]||new Set();
-      const removed = [...prevIds].filter(id=>!currentIds.has(id));
-      if(rows.length){
-        const {error} = await sb.from(t).upsert(rows.map(r=>toDb(t,r)));
-        if(error) console.error('Sync upsert failed for', t, error);
+      const changed = rows.filter(r=>map.get(r.id)!==rowKey(t,r));
+      for(let i=0;i<changed.length;i+=5){
+        const batch=changed.slice(i,i+5);
+        const {error} = await sb.from(t).upsert(batch.map(r=>toDb(t,r)));
+        if(error){ console.error('Sync upsert failed for', t, error); failed=true; }
+        else batch.forEach(r=>map.set(r.id,rowKey(t,r)));
       }
+      const currentIds = new Set(rows.map(r=>r.id));
+      const removed = [...map.keys()].filter(id=>!currentIds.has(id));
       if(removed.length){
         const {error} = await sb.from(t).delete().in('id',removed);
-        if(error) console.error('Sync delete failed for', t, error);
+        if(error){ console.error('Sync delete failed for', t, error); failed=true; }
+        else removed.forEach(id=>map.delete(id));
       }
-      lastSyncedIds[t]=currentIds;
     }
-  }finally{
+  }catch(e){ console.error('Sync failed:', e); failed=true; }
+  finally{
     syncInFlight=false;
+    clearTimeout(syncRetryTimer);
+    if(failed){
+      if(!syncWarned){ toast("Couldn't save to the cloud yet — will keep trying"); syncWarned=true; }
+      syncRetryTimer=setTimeout(pushState,15000);
+    } else if(syncWarned){ toast('Saved to the cloud ✓'); syncWarned=false; }
     if(syncQueued){ syncQueued=false; pushState(); }
   }
 }
 
 function saveState(){ cacheState(); pushState(); }
 
-// Realtime: when Jessica's phone (or Sean's) changes something, refresh that
-// table here and re-render so both devices stay in sync automatically.
+// Realtime: when the other phone changes something, fetch just the rows that
+// changed (not the whole table) and re-render. Rows this phone is still
+// waiting to upload are left alone so a local edit isn't overwritten.
+let rtPending = {}, rtTimer = null;
 function subscribeRealtime(){
   const channel = sb.channel('rir-sync');
   TABLES.forEach(t=>{
-    channel.on('postgres_changes', {event:'*', schema:'public', table:t}, async ()=>{
-      const {data,error} = await sb.from(t).select('*');
-      if(error){ console.error('Realtime refresh failed for', t, error); return; }
-      S[t] = data.map(r=>fromDb(t,r));
-      lastSyncedIds[t] = new Set(data.map(r=>r.id));
-      cacheState();
-      renderCurrentView();
+    channel.on('postgres_changes', {event:'*', schema:'public', table:t}, payload=>{
+      const id=(payload.new&&payload.new.id)||(payload.old&&payload.old.id);
+      if(!id) return;
+      (rtPending[t]=rtPending[t]||new Map()).set(id,payload.eventType);
+      clearTimeout(rtTimer); rtTimer=setTimeout(applyRealtime,400);
     });
   });
   channel.subscribe();
+}
+
+async function applyRealtime(){
+  const work=rtPending; rtPending={};
+  let touched=false;
+  for(const t in work){
+    const map=synced[t]||(synced[t]=new Map());
+    const isMine=id=>{ const r=(S[t]||[]).find(x=>x.id===id); return r&&map.get(id)!==rowKey(t,r); };
+    const dels=[...work[t]].filter(([,ev])=>ev==='DELETE').map(([id])=>id);
+    const ups=[...work[t]].filter(([,ev])=>ev!=='DELETE').map(([id])=>id).filter(id=>!isMine(id));
+    if(dels.length){ S[t]=(S[t]||[]).filter(r=>!dels.includes(r.id)); dels.forEach(id=>map.delete(id)); touched=true; }
+    if(ups.length){
+      const {data,error}=await sb.from(t).select('*').in('id',ups);
+      if(error){ console.error('Realtime refresh failed for', t, error); continue; }
+      data.forEach(raw=>{
+        const r=fromDb(t,raw), i=(S[t]||[]).findIndex(x=>x.id===r.id);
+        if(i>-1) S[t][i]=r; else (S[t]=S[t]||[]).push(r);
+        map.set(r.id,rowKey(t,r));
+      });
+      touched=true;
+    }
+  }
+  if(touched){ cacheState(); renderCurrentView(); }
 }
 
 // Re-renders whatever's currently on screen; used after a realtime update
@@ -1031,6 +1072,7 @@ async function enterApp(){
   errEl.textContent='';
   initApp();
   subscribeRealtime();
+  if(ok) setTimeout(shrinkBigPhotos,3000);
   if(!ok) toast("Couldn't reach the cloud — showing your last saved data. Changes will sync once you're back online.");
   else if(pendingSyncMessage) toast(pendingSyncMessage);
 }
@@ -1451,6 +1493,36 @@ function handlePhoto(e){
   if(!f) return;
   document.getElementById('photo-area').innerHTML='<i class="ti ti-camera"></i><div class="photo-upload-text">Working on that photo…</div>';
   resizeImageFile(f, showPhotoPreview, msg=>{ resetPhotoArea(); toast(msg); });
+}
+
+// One-time cleanup: photos saved before the size limit was lowered (Nov 2026)
+// are ~500 KB each. Re-shrink any big ones to the current size, a few per save.
+let shrinking=false;
+async function shrinkBigPhotos(){
+  if(shrinking) return; shrinking=true;
+  try{
+    const big=S.animals.filter(a=>a.photo&&a.photo.length>250000);
+    let n=0;
+    for(const a of big){
+      const small=await new Promise(res=>{
+        const img=new Image();
+        img.onload=()=>{
+          const scale=Math.min(1,640/Math.max(img.width,img.height));
+          const w=Math.round(img.width*scale), h=Math.round(img.height*scale);
+          const c=document.createElement('canvas'); c.width=w; c.height=h;
+          c.getContext('2d').drawImage(img,0,0,w,h);
+          let out=c.toDataURL('image/jpeg',0.6);
+          if(out.length>200000) out=c.toDataURL('image/jpeg',0.45);
+          res(out);
+        };
+        img.onerror=()=>res(null);
+        img.src=a.photo;
+      });
+      if(small&&small.length<a.photo.length){ a.photo=small; n++; }
+      if(n&&n%5===0) saveState();
+    }
+    if(n){ saveState(); console.log('Shrank',n,'photos'); }
+  }finally{ shrinking=false; }
 }
 
 // Shared by the animal form and the birth form: read a photo file, shrink it
