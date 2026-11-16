@@ -501,6 +501,7 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sa
     <div class="sheet-handle"></div>
     <div class="sheet-header"><div class="sheet-title" id="med-sheet-title">Medical Record</div><button class="sheet-close" onclick="closeSheet('medical-sheet')">✕</button></div>
     <div class="sheet-body">
+      <input type="hidden" id="medical-sheet-edit-id">
       <div class="fg"><label class="fl">Type</label>
         <select class="fs" id="m-type"><option>Vaccination</option><option>Deworming</option><option>Vet Visit</option><option>Medication</option><option>Injury</option><option>Surgery</option><option>Hoof/Farrier</option><option>Other</option></select>
       </div>
@@ -525,6 +526,7 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sa
     <div class="sheet-handle"></div>
     <div class="sheet-header"><div class="sheet-title">Breeding Record</div><button class="sheet-close" onclick="closeSheet('breeding-sheet')">✕</button></div>
     <div class="sheet-body">
+      <input type="hidden" id="breeding-sheet-edit-id">
       <div class="fg"><label class="fl">Bred to (Sire)</label><input class="fi" id="b-sire" placeholder="Buck / Ram name"></div>
       <div class="form-row">
         <div class="fg"><label class="fl">Breed Date</label><input class="fi" type="date" id="b-date"></div>
@@ -553,6 +555,7 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sa
     <div class="sheet-handle"></div>
     <div class="sheet-header"><div class="sheet-title">Weight & Feed Log</div><button class="sheet-close" onclick="closeSheet('feed-sheet')">✕</button></div>
     <div class="sheet-body">
+      <input type="hidden" id="feed-sheet-edit-id">
       <div class="fg"><label class="fl">Date</label><input class="fi" type="date" id="fw-date"></div>
       <div class="form-row">
         <div class="fg"><label class="fl">Weight (lbs)</label><input class="fi" type="number" id="fw-weight" placeholder="125"></div>
@@ -573,6 +576,7 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sa
     <div class="sheet-handle"></div>
     <div class="sheet-header"><div class="sheet-title">Log Milk</div><button class="sheet-close" onclick="closeSheet('milk-sheet')">✕</button></div>
     <div class="sheet-body">
+      <input type="hidden" id="milk-sheet-edit-id">
       <div class="fg"><label class="fl">Animal</label>
         <select class="fs" id="ml-animal" id="ml-animal"></select>
       </div>
@@ -627,6 +631,7 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sa
     <div class="sheet-handle"></div>
     <div class="sheet-header"><div class="sheet-title">Record Sale</div><button class="sheet-close" onclick="closeSheet('sale-sheet')">✕</button></div>
     <div class="sheet-body">
+      <input type="hidden" id="sale-sheet-edit-id">
       <div class="fg"><label class="fl">Type</label>
         <select class="fs" id="sl-type"><option value="product">Product</option><option value="meat">Meat / Animal</option></select>
       </div>
@@ -649,6 +654,7 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sa
     <div class="sheet-handle"></div>
     <div class="sheet-header"><div class="sheet-title">Butcher Record</div><button class="sheet-close" onclick="closeSheet('butcher-sheet')">✕</button></div>
     <div class="sheet-body">
+      <input type="hidden" id="butcher-sheet-edit-id">
       <div class="fg"><label class="fl">Animal</label>
         <select class="fs" id="bk-animal"></select>
       </div>
@@ -751,6 +757,7 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sa
     <div class="sheet-handle"></div>
     <div class="sheet-header"><div class="sheet-title">Log Harvest</div><button class="sheet-close" onclick="closeSheet('harvest-sheet')">✕</button></div>
     <div class="sheet-body">
+      <input type="hidden" id="harvest-sheet-edit-id">
       <div class="fg"><label class="fl">Crop *</label><input class="fi" id="hv-crop" placeholder="Tomatoes"></div>
       <div class="form-row">
         <div class="fg"><label class="fl">Date</label><input class="fi" type="date" id="hv-date"></div>
@@ -776,6 +783,7 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sa
     <div class="sheet-handle"></div>
     <div class="sheet-header"><div class="sheet-title">Add Reminder</div><button class="sheet-close" onclick="closeSheet('reminder-sheet')">✕</button></div>
     <div class="sheet-body">
+      <input type="hidden" id="reminder-sheet-edit-id">
       <div class="fg"><label class="fl">Title *</label><input class="fi" id="r-title" placeholder="CDT booster for Rosie"></div>
       <div class="fg"><label class="fl">Type</label>
         <select class="fs" id="r-type">
@@ -1391,23 +1399,23 @@ function openDetail(id){
     ${kidsCardHtml(a)}
     <div class="card" style="margin-bottom:10px">
       <div class="card-header"><div class="card-header-left"><i class="ti ti-stethoscope"></i>Medical Records</div></div>
-      ${med.length?med.map(m=>`<div class="list-item"><div style="display:flex;justify-content:space-between;align-items:flex-start"><div class="list-item-sub">${fmt(m.date)}</div><button onclick="deleteMedical('${m.id}')" style="background:none;border:none;color:var(--text3);font-size:16px;cursor:pointer"><i class="ti ti-trash"></i></button></div><div class="list-item-title">${m.type}${m.provider?' — '+m.provider:''}</div>${m.dose?`<div class="list-item-note">Dose: ${m.dose}</div>`:''} ${m.next?`<div class="list-item-note" style="color:var(--amber)">Next: ${fmt(m.next)}</div>`:''} ${m.notes?`<div class="list-item-note">${m.notes}</div>`:''}</div>`).join(''):`<div class="list-item" style="color:var(--text3);font-size:13px">No records yet</div>`}
+      ${med.length?med.map(m=>`<div class="list-item"><div style="display:flex;justify-content:space-between;align-items:flex-start"><div class="list-item-sub">${fmt(m.date)}</div><span style="display:flex;gap:6px"><button onclick="editMedical('${m.id}')" style="background:none;border:none;color:var(--text3);font-size:16px;cursor:pointer"><i class="ti ti-pencil"></i></button><button onclick="deleteMedical('${m.id}')" style="background:none;border:none;color:var(--text3);font-size:16px;cursor:pointer"><i class="ti ti-trash"></i></button></span></div><div class="list-item-title">${m.type}${m.provider?' — '+m.provider:''}</div>${m.dose?`<div class="list-item-note">Dose: ${m.dose}</div>`:''} ${m.next?`<div class="list-item-note" style="color:var(--amber)">Next: ${fmt(m.next)}</div>`:''} ${m.notes?`<div class="list-item-note">${m.notes}</div>`:''}</div>`).join(''):`<div class="list-item" style="color:var(--text3);font-size:13px">No records yet</div>`}
       <button class="add-row-btn" onclick="openMedSheet()"><i class="ti ti-plus"></i>Add Medical Record</button>
     </div>
     <div class="card" style="margin-bottom:10px">
       <div class="card-header"><div class="card-header-left"><i class="ti ti-heart"></i>Breeding</div></div>
-      ${brd.length?brd.map(b=>`<div class="list-item"><div style="display:flex;justify-content:space-between;align-items:flex-start"><div class="list-item-sub">${fmt(b.date)}</div><button onclick="deleteBreeding('${b.id}')" style="background:none;border:none;color:var(--text3);font-size:16px;cursor:pointer"><i class="ti ti-trash"></i></button></div><div class="list-item-title">${b.sire?'Bred to '+b.sire:'Breeding'} — <span style="color:var(--green)">${b.outcome}</span></div>${b.due?`<div class="list-item-note">Due: ${fmt(b.due)}</div>`:''} ${b.offspring?`<div class="list-item-note">Offspring: ${b.offspring}</div>`:''} ${b.notes?`<div class="list-item-note">${b.notes}</div>`:''}</div>`).join(''):`<div class="list-item" style="color:var(--text3);font-size:13px">No records yet</div>`}
+      ${brd.length?brd.map(b=>`<div class="list-item"><div style="display:flex;justify-content:space-between;align-items:flex-start"><div class="list-item-sub">${fmt(b.date)}</div><span style="display:flex;gap:6px"><button onclick="editBreeding('${b.id}')" style="background:none;border:none;color:var(--text3);font-size:16px;cursor:pointer"><i class="ti ti-pencil"></i></button><button onclick="deleteBreeding('${b.id}')" style="background:none;border:none;color:var(--text3);font-size:16px;cursor:pointer"><i class="ti ti-trash"></i></button></span></div><div class="list-item-title">${b.sire?'Bred to '+b.sire:'Breeding'} — <span style="color:var(--green)">${b.outcome}</span></div>${b.due?`<div class="list-item-note">Due: ${fmt(b.due)}</div>`:''} ${b.offspring?`<div class="list-item-note">Offspring: ${b.offspring}</div>`:''} ${b.notes?`<div class="list-item-note">${b.notes}</div>`:''}</div>`).join(''):`<div class="list-item" style="color:var(--text3);font-size:13px">No records yet</div>`}
       <button class="add-row-btn" onclick="openBreedSheet()"><i class="ti ti-plus"></i>Add Breeding Record</button>
     </div>
     <div class="card" style="margin-bottom:10px">
       <div class="card-header"><div class="card-header-left"><i class="ti ti-scale"></i>Weight & Feed</div></div>
-      ${fds.length?fds.slice(0,5).map(f=>`<div class="list-item"><div style="display:flex;justify-content:space-between;align-items:flex-start"><div class="list-item-sub">${fmt(f.date)}</div><button onclick="deleteFeedLog('${f.id}')" style="background:none;border:none;color:var(--text3);font-size:16px;cursor:pointer"><i class="ti ti-trash"></i></button></div>${f.weight?`<div class="list-item-title">Weight: ${f.weight} lbs</div>`:''} ${f.feed?`<div class="list-item-note">${f.feed}${f.amount?' · '+f.amount+' lbs/day':''}</div>`:''} ${f.notes?`<div class="list-item-note">${f.notes}</div>`:''}</div>`).join(''):`<div class="list-item" style="color:var(--text3);font-size:13px">No logs yet</div>`}
+      ${fds.length?fds.slice(0,5).map(f=>`<div class="list-item"><div style="display:flex;justify-content:space-between;align-items:flex-start"><div class="list-item-sub">${fmt(f.date)}</div><span style="display:flex;gap:6px"><button onclick="editFeedLog('${f.id}')" style="background:none;border:none;color:var(--text3);font-size:16px;cursor:pointer"><i class="ti ti-pencil"></i></button><button onclick="deleteFeedLog('${f.id}')" style="background:none;border:none;color:var(--text3);font-size:16px;cursor:pointer"><i class="ti ti-trash"></i></button></span></div>${f.weight?`<div class="list-item-title">Weight: ${f.weight} lbs</div>`:''} ${f.feed?`<div class="list-item-note">${f.feed}${f.amount?' · '+f.amount+' lbs/day':''}</div>`:''} ${f.notes?`<div class="list-item-note">${f.notes}</div>`:''}</div>`).join(''):`<div class="list-item" style="color:var(--text3);font-size:13px">No logs yet</div>`}
       <button class="add-row-btn" onclick="openFeedSheet()"><i class="ti ti-plus"></i>Log Weight / Feed</button>
     </div>
     ${a.species==='Goat'||a.species==='Sheep'||a.species==='Cattle'?`
     <div class="card" style="margin-bottom:10px">
       <div class="card-header"><div class="card-header-left"><i class="ti ti-droplet"></i>Milk Log</div></div>
-      ${milks.length?milks.slice(0,5).map(m=>`<div class="milk-row"><span class="milk-date">${fmt(m.date)}</span><span class="milk-animal">${m.session||'AM'}</span><span class="milk-qty">${m.qty} oz</span><button onclick="deleteMilkLog('${m.id}')" style="background:none;border:none;color:var(--text3);font-size:15px;cursor:pointer;padding:0 0 0 6px"><i class="ti ti-trash"></i></button></div>`).join(''):`<div class="list-item" style="color:var(--text3);font-size:13px">No milk logs for this animal</div>`}
+      ${milks.length?milks.slice(0,5).map(m=>`<div class="milk-row"><span class="milk-date">${fmt(m.date)}</span><span class="milk-animal">${m.session||'AM'}</span><span class="milk-qty">${m.qty} oz</span><button onclick="editMilkLog('${m.id}')" style="background:none;border:none;color:var(--text3);font-size:15px;cursor:pointer;padding:0 0 0 6px"><i class="ti ti-pencil"></i></button><button onclick="deleteMilkLog('${m.id}')" style="background:none;border:none;color:var(--text3);font-size:15px;cursor:pointer;padding:0 0 0 6px"><i class="ti ti-trash"></i></button></div>`).join(''):`<div class="list-item" style="color:var(--text3);font-size:13px">No milk logs for this animal</div>`}
       <button class="add-row-btn" onclick="openMilkSheetForAnimal('${id}')"><i class="ti ti-plus"></i>Log Milk</button>
     </div>`:''}
   `;
@@ -1584,7 +1592,40 @@ function deleteAnimal(){
 }
 
 // ── MEDICAL ──
+// ═══════════════════════════════════════════════════
+// EDITING RECORDS (Nov 2026)
+// Each popup has a hidden "<sheet>-edit-id" field: empty = adding a new
+// record, filled = editing that record. Saving merges the changes onto the
+// existing record, so fields the popup doesn't show (done, created, etc.)
+// are kept.
+// ═══════════════════════════════════════════════════
+function setEditMode(sheet,id,addTitle,editTitle){
+  document.getElementById(sheet+'-edit-id').value=id||'';
+  const t=document.querySelector('#'+sheet+' .sheet-title'), title=id?editTitle:addTitle;
+  if(t&&title) t.textContent=title;
+}
+function editingId(sheet){ return document.getElementById(sheet+'-edit-id').value; }
+function setVal(id,v){ document.getElementById(id).value=(v==null?'':v); }
+// Add a new record, or merge changes onto the one being edited.
+function upsertRec(table,editId,fields){
+  if(editId){
+    const i=S[table].findIndex(x=>x.id===editId);
+    if(i>-1){ S[table][i]={...S[table][i],...fields,id:editId}; return S[table][i]; }
+  }
+  const rec={id:uid(),...fields}; S[table].push(rec); return rec;
+}
+// Medical "next due" and breeding "due date" make a reminder automatically.
+// When an edit changes that date, move the existing open reminder instead of
+// adding a second one.
+function syncAutoReminder(animalId,oldDue,newDue,title,type,note){
+  if(!animalId||!newDue||newDue===oldDue) return;
+  const r=oldDue?S.reminders.find(x=>x.animalId===animalId&&x.due===oldDue&&x.notes===note&&!x.done):null;
+  if(r){ r.due=newDue; r.title=title; }
+  else S.reminders.push({id:uid(),title,type,animalId,due:newDue,notes:note,created:Date.now()});
+}
+
 function openMedSheet(){
+  setEditMode('medical-sheet','');
   document.getElementById('m-animal-id').value=currentAnimalId||'';
   const a=currentAnimalId?S.animals.find(x=>x.id===currentAnimalId):null;
   document.getElementById('med-sheet-title').textContent=a?`Medical: ${a.name}`:'Medical Record';
@@ -1597,16 +1638,19 @@ function openMedSheet(){
 function saveMedical(){
   const date=document.getElementById('m-date').value, type=document.getElementById('m-type').value;
   if(!date||!type){ toast('Date and type required'); return; }
-  const rec={id:uid(),animalId:document.getElementById('m-animal-id').value,type,date,provider:document.getElementById('m-provider').value.trim(),dose:document.getElementById('m-dose').value.trim(),next:document.getElementById('m-next').value,weight:document.getElementById('m-weight').value,notes:document.getElementById('m-notes').value.trim()};
-  S.medical.push(rec);
-  if(rec.next&&rec.animalId){ const a=S.animals.find(x=>x.id===rec.animalId); S.reminders.push({id:uid(),title:`${type} due — ${a?.name||''}`,type:'medical',animalId:rec.animalId,due:rec.next,notes:'Auto-created from medical record',created:Date.now()}); }
-  if(rec.weight&&rec.animalId){ const i=S.animals.findIndex(a=>a.id===rec.animalId); if(i>-1) S.animals[i].weight=rec.weight; }
-  saveState(); closeSheet('medical-sheet'); toast('Medical record saved');
+  const editId=editingId('medical-sheet');
+  const old=editId?{...(S.medical.find(x=>x.id===editId)||{})}:{};
+  const rec=upsertRec('medical',editId,{animalId:document.getElementById('m-animal-id').value,type,date,provider:document.getElementById('m-provider').value.trim(),dose:document.getElementById('m-dose').value.trim(),next:document.getElementById('m-next').value,weight:document.getElementById('m-weight').value,notes:document.getElementById('m-notes').value.trim()});
+  const a=S.animals.find(x=>x.id===rec.animalId);
+  syncAutoReminder(rec.animalId,old.next,rec.next,`${type} due — ${a?.name||''}`,'medical','Auto-created from medical record');
+  if(rec.weight&&rec.animalId&&rec.weight!==old.weight){ const i=S.animals.findIndex(x=>x.id===rec.animalId); if(i>-1) S.animals[i].weight=rec.weight; }
+  saveState(); closeSheet('medical-sheet'); toast(editId?'Medical record updated':'Medical record saved');
   if(currentAnimalId) openDetail(currentAnimalId);
 }
 
 // ── BREEDING ──
 function openBreedSheet(){
+  setEditMode('breeding-sheet','','Breeding Record','Edit Breeding Record');
   document.getElementById('b-animal-id').value=currentAnimalId||'';
   ['b-sire','b-offspring','b-notes'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('b-date').value=today(); document.getElementById('b-due').value='';
@@ -1615,26 +1659,51 @@ function openBreedSheet(){
 }
 function saveBreeding(){
   const date=document.getElementById('b-date').value; if(!date){ toast('Date required'); return; }
-  const rec={id:uid(),animalId:document.getElementById('b-animal-id').value,date,sire:document.getElementById('b-sire').value.trim(),due:document.getElementById('b-due').value,method:document.getElementById('b-method').value,outcome:document.getElementById('b-outcome').value,offspring:document.getElementById('b-offspring').value.trim(),notes:document.getElementById('b-notes').value.trim()};
-  S.breeding.push(rec);
-  if(rec.due&&rec.animalId){ const i=S.animals.findIndex(a=>a.id===rec.animalId); if(i>-1){S.animals[i].pregnant='Yes';S.animals[i].due=rec.due;} const a=S.animals.find(x=>x.id===rec.animalId); S.reminders.push({id:uid(),title:`Due date — ${a?.name||''}`,type:'breeding',animalId:rec.animalId,due:rec.due,notes:'Auto-created from breeding record',created:Date.now()}); }
-  saveState(); closeSheet('breeding-sheet'); toast('Breeding record saved');
+  const editId=editingId('breeding-sheet');
+  const old=editId?{...(S.breeding.find(x=>x.id===editId)||{})}:{};
+  const rec=upsertRec('breeding',editId,{animalId:document.getElementById('b-animal-id').value,date,sire:document.getElementById('b-sire').value.trim(),due:document.getElementById('b-due').value,method:document.getElementById('b-method').value,outcome:document.getElementById('b-outcome').value,offspring:document.getElementById('b-offspring').value.trim(),notes:document.getElementById('b-notes').value.trim()});
+  // Only a new or changed due date marks her pregnant — editing a typo on an
+  // old record shouldn't flip her back to Pregnant.
+  if(rec.due&&rec.animalId&&rec.due!==old.due){ const i=S.animals.findIndex(a=>a.id===rec.animalId); if(i>-1){S.animals[i].pregnant='Yes';S.animals[i].due=rec.due;} const a=S.animals.find(x=>x.id===rec.animalId); syncAutoReminder(rec.animalId,old.due,rec.due,`Due date — ${a?.name||''}`,'breeding','Auto-created from breeding record'); }
+  saveState(); closeSheet('breeding-sheet'); toast(editId?'Breeding record updated':'Breeding record saved');
   if(currentAnimalId) openDetail(currentAnimalId);
 }
 
 // ── FEED ──
 function openFeedSheet(){
+  setEditMode('feed-sheet','','Weight & Feed Log','Edit Weight & Feed Log');
   document.getElementById('fw-animal-id').value=currentAnimalId||'';
   ['fw-weight','fw-feed','fw-amount','fw-notes'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('fw-date').value=today();
   openSheet('feed-sheet');
 }
 function saveFeed(){
-  const rec={id:uid(),animalId:document.getElementById('fw-animal-id').value,date:document.getElementById('fw-date').value,weight:document.getElementById('fw-weight').value,feed:document.getElementById('fw-feed').value.trim(),amount:document.getElementById('fw-amount').value,notes:document.getElementById('fw-notes').value.trim()};
-  S.feed.push(rec);
-  if(rec.weight&&rec.animalId){ const i=S.animals.findIndex(a=>a.id===rec.animalId); if(i>-1) S.animals[i].weight=rec.weight; }
-  saveState(); closeSheet('feed-sheet'); toast('Log saved');
+  const editId=editingId('feed-sheet');
+  const old=editId?{...(S.feed.find(x=>x.id===editId)||{})}:{};
+  const rec=upsertRec('feed',editId,{animalId:document.getElementById('fw-animal-id').value,date:document.getElementById('fw-date').value,weight:document.getElementById('fw-weight').value,feed:document.getElementById('fw-feed').value.trim(),amount:document.getElementById('fw-amount').value,notes:document.getElementById('fw-notes').value.trim()});
+  if(rec.weight&&rec.animalId&&rec.weight!==old.weight){ const i=S.animals.findIndex(a=>a.id===rec.animalId); if(i>-1) S.animals[i].weight=rec.weight; }
+  saveState(); closeSheet('feed-sheet'); toast(editId?'Log updated':'Log saved');
   if(currentAnimalId) openDetail(currentAnimalId);
+}
+
+// Edit buttons on an animal's page
+function editMedical(id){
+  const m=S.medical.find(x=>x.id===id); if(!m) return;
+  openMedSheet(); setEditMode('medical-sheet',id);
+  const a=S.animals.find(x=>x.id===m.animalId);
+  document.getElementById('med-sheet-title').textContent=a?`Edit Medical: ${a.name}`:'Edit Medical Record';
+  setVal('m-animal-id',m.animalId); setVal('m-type',m.type||'Other'); setVal('m-date',m.date); setVal('m-provider',m.provider); setVal('m-dose',m.dose); setVal('m-next',m.next); setVal('m-weight',m.weight); setVal('m-notes',m.notes);
+}
+function editBreeding(id){
+  const b=S.breeding.find(x=>x.id===id); if(!b) return;
+  openBreedSheet(); setEditMode('breeding-sheet',id,'Breeding Record','Edit Breeding Record');
+  setVal('b-animal-id',b.animalId); setVal('b-date',b.date); setVal('b-sire',b.sire); setVal('b-due',b.due); setVal('b-offspring',b.offspring); setVal('b-notes',b.notes);
+  if(b.method) setVal('b-method',b.method); if(b.outcome) setVal('b-outcome',b.outcome);
+}
+function editFeedLog(id){
+  const f=S.feed.find(x=>x.id===id); if(!f) return;
+  openFeedSheet(); setEditMode('feed-sheet',id,'Weight & Feed Log','Edit Weight & Feed Log');
+  setVal('fw-animal-id',f.animalId); setVal('fw-date',f.date); setVal('fw-weight',f.weight); setVal('fw-feed',f.feed); setVal('fw-amount',f.amount); setVal('fw-notes',f.notes);
 }
 
 // ═══════════════════════════════════════════════════
@@ -1661,7 +1730,7 @@ function renderMilk(){
     </div>
     <div class="card">
       <div class="card-header"><div class="card-header-left"><i class="ti ti-droplet"></i>Milk Log</div></div>
-      ${logs.length?logs.slice(0,30).map(m=>{ const a=S.animals.find(x=>x.id===m.animalId); return `<div class="milk-row"><span class="milk-date">${fmt(m.date)}</span><span class="milk-animal">${a?a.name:'Unknown'} · ${m.session||'AM'}</span><span class="milk-qty">${m.qty} oz</span></div>`; }).join(''):`<div class="list-item" style="color:var(--text3);font-size:13px">No milk logs yet</div>`}
+      ${logs.length?logs.slice(0,30).map(m=>{ const a=S.animals.find(x=>x.id===m.animalId); return `<div class="milk-row"><span class="milk-date">${fmt(m.date)}</span><span class="milk-animal">${a?a.name:'Unknown'} · ${m.session||'AM'}</span><span class="milk-qty">${m.qty} oz</span><button onclick="editMilkLog('${m.id}')" style="background:none;border:none;color:var(--text3);font-size:15px;cursor:pointer;padding:0 0 0 6px"><i class="ti ti-pencil"></i></button></div>`; }).join(''):`<div class="list-item" style="color:var(--text3);font-size:13px">No milk logs yet</div>`}
     </div>
   `;
 }
@@ -1702,12 +1771,13 @@ function renderSales(context){
     </div>
     <div class="card">
       <div class="card-header"><div class="card-header-left"><i class="ti ti-cash"></i>Sales Records</div></div>
-      ${sales.length?sales.map(s=>`<div class="list-item"><div class="list-item-sub">${fmt(s.date)}${s.buyer?' · '+s.buyer:''}</div><div class="list-item-title">${s.item}</div><div style="display:flex;justify-content:space-between;align-items:center"><span class="list-item-note">${s.notes||''}</span><div style="display:flex;align-items:center;gap:8px"><span style="font-weight:700;color:var(--green)">$${(+s.amount||0).toFixed(2)}</span><button onclick="deleteSale('${s.id}')" style="background:none;border:none;color:var(--text3);font-size:16px;cursor:pointer"><i class="ti ti-trash"></i></button></div></div></div>`).join(''):`<div class="list-item" style="color:var(--text3);font-size:13px">No sales yet</div>`}
+      ${sales.length?sales.map(s=>`<div class="list-item"><div class="list-item-sub">${fmt(s.date)}${s.buyer?' · '+s.buyer:''}</div><div class="list-item-title">${s.item}</div><div style="display:flex;justify-content:space-between;align-items:center"><span class="list-item-note">${s.notes||''}</span><div style="display:flex;align-items:center;gap:8px"><span style="font-weight:700;color:var(--green)">$${(+s.amount||0).toFixed(2)}</span><button onclick="editSale('${s.id}')" style="background:none;border:none;color:var(--text3);font-size:16px;cursor:pointer"><i class="ti ti-pencil"></i></button><button onclick="deleteSale('${s.id}')" style="background:none;border:none;color:var(--text3);font-size:16px;cursor:pointer"><i class="ti ti-trash"></i></button></div></div></div>`).join(''):`<div class="list-item" style="color:var(--text3);font-size:13px">No sales yet</div>`}
     </div>
   `;
 }
 
 function openMilkSheet(){
+  setEditMode('milk-sheet','','Log Milk','Edit Milk Log');
   const sel=document.getElementById('ml-animal');
   const dairyAnimals=S.animals.filter(a=>['Goat','Sheep','Cattle'].includes(a.species));
   sel.innerHTML='<option value="">Select animal…</option>'+dairyAnimals.sort(byName).map(a=>`<option value="${a.id}">${a.name}</option>`).join('');
@@ -1718,6 +1788,12 @@ function openMilkSheet(){
   openSheet('milk-sheet');
 }
 
+function editMilkLog(id){
+  const m=S.milk.find(x=>x.id===id); if(!m) return;
+  openMilkSheet(); setEditMode('milk-sheet',id,'Log Milk','Edit Milk Log');
+  setVal('ml-animal',m.animalId); setVal('ml-date',m.date); setVal('ml-qty',m.qty); setVal('ml-session',m.session||'AM'); setVal('ml-notes',m.notes);
+}
+
 function openMilkSheetForAnimal(id){
   openMilkSheet();
   document.getElementById('ml-animal').value=id;
@@ -1726,8 +1802,9 @@ function openMilkSheetForAnimal(id){
 function saveMilkLog(){
   const animalId=document.getElementById('ml-animal').value, qty=document.getElementById('ml-qty').value, date=document.getElementById('ml-date').value;
   if(!qty||!date){ toast('Date and quantity required'); return; }
-  S.milk.push({id:uid(),animalId,date,qty,session:document.getElementById('ml-session').value,notes:document.getElementById('ml-notes').value.trim()});
-  saveState(); closeSheet('milk-sheet'); toast('Milk logged');
+  const editId=editingId('milk-sheet');
+  upsertRec('milk',editId,{animalId,date,qty,session:document.getElementById('ml-session').value,notes:document.getElementById('ml-notes').value.trim()});
+  saveState(); closeSheet('milk-sheet'); toast(editId?'Milk log updated':'Milk logged');
   milkSeg(milkTab); renderHome();
   if(currentAnimalId&&currentAnimalId===animalId) openDetail(currentAnimalId);
 }
@@ -1736,8 +1813,9 @@ function openProductSheet(){ document.getElementById('prod-sheet-title').textCon
 function editProduct(id){ const p=S.products.find(x=>x.id===id); if(!p) return; document.getElementById('p-name').value=p.name||''; document.getElementById('p-cat').value=p.cat||'Soap'; document.getElementById('p-date').value=p.date||''; document.getElementById('p-made').value=p.made||''; document.getElementById('p-onhand').value=p.onhand||''; document.getElementById('p-cost').value=p.cost||''; document.getElementById('p-price').value=p.price||''; document.getElementById('p-milk').value=p.milk||''; document.getElementById('p-recipe').value=p.recipe||''; document.getElementById('p-notes').value=p.notes||''; document.getElementById('p-id').value=p.id; document.getElementById('prod-sheet-title').textContent='Edit Product'; openSheet('product-sheet'); }
 function saveProduct(){ const name=document.getElementById('p-name').value.trim(); if(!name){toast('Name required');return;} const editId=document.getElementById('p-id').value; const p={id:editId||uid(),name,cat:document.getElementById('p-cat').value,date:document.getElementById('p-date').value,made:document.getElementById('p-made').value,onhand:document.getElementById('p-onhand').value,cost:document.getElementById('p-cost').value,price:document.getElementById('p-price').value,milk:document.getElementById('p-milk').value,recipe:document.getElementById('p-recipe').value.trim(),notes:document.getElementById('p-notes').value.trim()}; if(editId){const i=S.products.findIndex(x=>x.id===editId);if(i>-1)S.products[i]=p;}else S.products.push(p); saveState(); closeSheet('product-sheet'); toast(editId?'Product updated':'Product added'); renderProducts(); }
 
-function openSaleSheet(type){ document.getElementById('sl-type').value=type||'product'; ['sl-item','sl-buyer','sl-notes'].forEach(id=>document.getElementById(id).value=''); document.getElementById('sl-date').value=today(); document.getElementById('sl-amount').value=''; openSheet('sale-sheet'); }
-function saveSale(){ const item=document.getElementById('sl-item').value.trim(),amount=document.getElementById('sl-amount').value; if(!item){toast('Item required');return;} S.sales.push({id:uid(),type:document.getElementById('sl-type').value,item,date:document.getElementById('sl-date').value,amount,buyer:document.getElementById('sl-buyer').value.trim(),notes:document.getElementById('sl-notes').value.trim()}); saveState(); closeSheet('sale-sheet'); toast('Sale recorded'); milkSeg(milkTab); butcherSeg(butcherTab); }
+function openSaleSheet(type){ setEditMode('sale-sheet','','Record Sale','Edit Sale'); document.getElementById('sl-type').value=type||'product'; ['sl-item','sl-buyer','sl-notes'].forEach(id=>document.getElementById(id).value=''); document.getElementById('sl-date').value=today(); document.getElementById('sl-amount').value=''; openSheet('sale-sheet'); }
+function editSale(id){ const s=S.sales.find(x=>x.id===id); if(!s) return; openSaleSheet(s.type); setEditMode('sale-sheet',id,'Record Sale','Edit Sale'); setVal('sl-item',s.item); setVal('sl-date',s.date); setVal('sl-amount',s.amount); setVal('sl-buyer',s.buyer); setVal('sl-notes',s.notes); }
+function saveSale(){ const item=document.getElementById('sl-item').value.trim(),amount=document.getElementById('sl-amount').value; if(!item){toast('Item required');return;} const editId=editingId('sale-sheet'); upsertRec('sales',editId,{type:document.getElementById('sl-type').value,item,date:document.getElementById('sl-date').value,amount,buyer:document.getElementById('sl-buyer').value.trim(),notes:document.getElementById('sl-notes').value.trim()}); saveState(); closeSheet('sale-sheet'); toast(editId?'Sale updated':'Sale recorded'); milkSeg(milkTab); butcherSeg(butcherTab); }
 
 // ═══════════════════════════════════════════════════
 // BUTCHER & FREEZER
@@ -1759,7 +1837,7 @@ function renderButcher(){
       <div><div style="font-size:22px;font-weight:700;color:var(--brand)">${bks.length}</div><div style="font-size:12px;color:var(--text3)">Butcher records</div></div>
       <button class="btn-add" onclick="openButcherSheet()"><i class="ti ti-plus"></i>Add</button>
     </div>
-    ${bks.length?bks.map(b=>{ const a=S.animals.find(x=>x.id===b.animalId); return `<div class="card" style="margin-bottom:10px"><div class="card-header"><div class="card-header-left"><i class="ti ti-meat"></i>${a?a.name:b.animalName||'Unknown'}</div><div style="display:flex;gap:6px;align-items:center"><span class="tag tag-brand">${fmt(b.date)}</span><button onclick="deleteButcher('${b.id}')" style="background:none;border:none;color:var(--text3);font-size:16px;cursor:pointer"><i class="ti ti-trash"></i></button></div></div>${b.live?`<div class="card-row"><span class="card-key">Live Weight</span><span class="card-val">${b.live} lbs</span></div>`:''} ${b.hang?`<div class="card-row"><span class="card-key">Hanging Weight</span><span class="card-val">${b.hang} lbs</span></div>`:''} ${b.processed?`<div class="card-row"><span class="card-key">Processed</span><span class="card-val">${b.processed} lbs</span></div>`:''} <div class="card-row"><span class="card-key">Purpose</span><span class="card-val">${b.purpose}</span></div>${b.cuts?`<div class="card-row" style="flex-direction:column;gap:4px"><span class="card-key">Cuts</span><span style="font-size:13px;color:var(--text2)">${b.cuts}</span></div>`:''} ${b.notes?`<div class="card-row" style="flex-direction:column;gap:4px"><span class="card-key">Notes</span><span style="font-size:13px;color:var(--text2)">${b.notes}</span></div>`:''}</div>`; }).join(''):`<div class="empty-state"><div class="empty-icon">🥩</div><div class="empty-text">No butcher records yet</div></div>`}
+    ${bks.length?bks.map(b=>{ const a=S.animals.find(x=>x.id===b.animalId); return `<div class="card" style="margin-bottom:10px"><div class="card-header"><div class="card-header-left"><i class="ti ti-meat"></i>${a?a.name:b.animalName||'Unknown'}</div><div style="display:flex;gap:6px;align-items:center"><span class="tag tag-brand">${fmt(b.date)}</span><button onclick="editButcher('${b.id}')" style="background:none;border:none;color:var(--text3);font-size:16px;cursor:pointer"><i class="ti ti-pencil"></i></button><button onclick="deleteButcher('${b.id}')" style="background:none;border:none;color:var(--text3);font-size:16px;cursor:pointer"><i class="ti ti-trash"></i></button></div></div>${b.live?`<div class="card-row"><span class="card-key">Live Weight</span><span class="card-val">${b.live} lbs</span></div>`:''} ${b.hang?`<div class="card-row"><span class="card-key">Hanging Weight</span><span class="card-val">${b.hang} lbs</span></div>`:''} ${b.processed?`<div class="card-row"><span class="card-key">Processed</span><span class="card-val">${b.processed} lbs</span></div>`:''} <div class="card-row"><span class="card-key">Purpose</span><span class="card-val">${b.purpose}</span></div>${b.cuts?`<div class="card-row" style="flex-direction:column;gap:4px"><span class="card-key">Cuts</span><span style="font-size:13px;color:var(--text2)">${b.cuts}</span></div>`:''} ${b.notes?`<div class="card-row" style="flex-direction:column;gap:4px"><span class="card-key">Notes</span><span style="font-size:13px;color:var(--text2)">${b.notes}</span></div>`:''}</div>`; }).join(''):`<div class="empty-state"><div class="empty-icon">🥩</div><div class="empty-text">No butcher records yet</div></div>`}
   `;
 }
 
@@ -1789,23 +1867,32 @@ function renderFreezer(){
   `;
 }
 
-function openButcherSheet(){
+function openButcherSheet(keepId){
+  setEditMode('butcher-sheet','','Butcher Record','Edit Butcher Record');
   const sel=document.getElementById('bk-animal');
-  sel.innerHTML='<option value="">Select animal…</option>'+S.animals.filter(a=>a.status==='Active'||a.status==='Breeding Stock').sort(byName).map(a=>`<option value="${a.id}">${a.name} (${a.species})</option>`).join('');
+  // When editing, the animal is already marked Butchered — keep it in the list.
+  sel.innerHTML='<option value="">Select animal…</option>'+S.animals.filter(a=>a.status==='Active'||a.status==='Breeding Stock'||a.id===keepId).sort(byName).map(a=>`<option value="${a.id}">${a.name} (${a.species})</option>`).join('');
   ['bk-live','bk-hang','bk-processed','bk-cuts','bk-processor','bk-notes'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('bk-date').value=today();
   document.getElementById('bk-purpose').selectedIndex=0;
   openSheet('butcher-sheet');
 }
 
+function editButcher(id){
+  const b=S.butcher.find(x=>x.id===id); if(!b) return;
+  openButcherSheet(b.animalId); setEditMode('butcher-sheet',id,'Butcher Record','Edit Butcher Record');
+  setVal('bk-animal',b.animalId); setVal('bk-date',b.date); setVal('bk-live',b.live); setVal('bk-hang',b.hang); setVal('bk-processed',b.processed); if(b.purpose) setVal('bk-purpose',b.purpose); setVal('bk-cuts',b.cuts); setVal('bk-processor',b.processor); setVal('bk-notes',b.notes);
+}
+
 function saveButcher(){
   const date=document.getElementById('bk-date').value; if(!date){toast('Date required');return;}
   const animalId=document.getElementById('bk-animal').value;
   const a=animalId?S.animals.find(x=>x.id===animalId):null;
-  const rec={id:uid(),animalId,animalName:a?a.name:'',date,live:document.getElementById('bk-live').value,hang:document.getElementById('bk-hang').value,processed:document.getElementById('bk-processed').value,purpose:document.getElementById('bk-purpose').value,cuts:document.getElementById('bk-cuts').value.trim(),processor:document.getElementById('bk-processor').value.trim(),notes:document.getElementById('bk-notes').value.trim()};
-  S.butcher.push(rec);
-  if(animalId){ const i=S.animals.findIndex(x=>x.id===animalId); if(i>-1) S.animals[i].status='Butchered'; }
-  saveState(); closeSheet('butcher-sheet'); toast('Butcher record saved'); renderButcher(); renderAnimals();
+  const editId=editingId('butcher-sheet');
+  const old=editId?{...(S.butcher.find(x=>x.id===editId)||{})}:{};
+  upsertRec('butcher',editId,{animalId,animalName:a?a.name:(old.animalName||''),date,live:document.getElementById('bk-live').value,hang:document.getElementById('bk-hang').value,processed:document.getElementById('bk-processed').value,purpose:document.getElementById('bk-purpose').value,cuts:document.getElementById('bk-cuts').value.trim(),processor:document.getElementById('bk-processor').value.trim(),notes:document.getElementById('bk-notes').value.trim()});
+  if(animalId&&animalId!==old.animalId){ const i=S.animals.findIndex(x=>x.id===animalId); if(i>-1) S.animals[i].status='Butchered'; }
+  saveState(); closeSheet('butcher-sheet'); toast(editId?'Butcher record updated':'Butcher record saved'); renderButcher(); renderAnimals();
 }
 
 function openFreezerSheet(id){
@@ -1894,7 +1981,7 @@ function renderHarvestLog(){
     </div>
     ${Object.keys(byCrop).length?`<div class="card" style="margin-bottom:10px"><div class="card-header"><div class="card-header-left"><i class="ti ti-chart-bar"></i>Totals by Crop</div></div>${Object.entries(byCrop).map(([c,t])=>`<div class="card-row"><span class="card-key">${c}</span><span class="card-val" style="color:var(--green);font-weight:700">${t} lbs</span></div>`).join('')}</div>`:''}
     <div class="card"><div class="card-header"><div class="card-header-left"><i class="ti ti-basket"></i>Harvest Log</div></div>
-      ${hv.length?hv.map(h=>`<div class="list-item"><div class="list-item-sub">${fmt(h.date)}${h.bed?' · '+h.bed:''}</div><div class="list-item-title">${h.crop} — ${h.yield} ${h.unit}</div><div style="display:flex;justify-content:space-between;align-items:center"><div style="display:flex;gap:8px"><span class="tag ${h.quality==='Excellent'?'tag-green':h.quality==='Good'?'tag-teal':h.quality==='Fair'?'tag-amber':'tag-red'}">${h.quality}</span>${h.notes?`<span class="list-item-note">${h.notes}</span>`:''}</div><button onclick="deleteHarvest('${h.id}')" style="background:none;border:none;color:var(--text3);font-size:16px;cursor:pointer"><i class="ti ti-trash"></i></button></div></div>`).join(''):`<div class="list-item" style="color:var(--text3);font-size:13px">No harvest logs yet</div>`}
+      ${hv.length?hv.map(h=>`<div class="list-item"><div class="list-item-sub">${fmt(h.date)}${h.bed?' · '+h.bed:''}</div><div class="list-item-title">${h.crop} — ${h.yield} ${h.unit}</div><div style="display:flex;justify-content:space-between;align-items:center"><div style="display:flex;gap:8px"><span class="tag ${h.quality==='Excellent'?'tag-green':h.quality==='Good'?'tag-teal':h.quality==='Fair'?'tag-amber':'tag-red'}">${h.quality}</span>${h.notes?`<span class="list-item-note">${h.notes}</span>`:''}</div><span style="display:flex;gap:6px"><button onclick="editHarvest('${h.id}')" style="background:none;border:none;color:var(--text3);font-size:16px;cursor:pointer"><i class="ti ti-pencil"></i></button><button onclick="deleteHarvest('${h.id}')" style="background:none;border:none;color:var(--text3);font-size:16px;cursor:pointer"><i class="ti ti-trash"></i></button></span></div></div>`).join(''):`<div class="list-item" style="color:var(--text3);font-size:13px">No harvest logs yet</div>`}
     </div>
   `;
 }
@@ -1937,8 +2024,9 @@ function openSeedSheet(id){ document.getElementById('seed-title').textContent=id
 function editSeed(id){ openSeedSheet(id); }
 function saveSeed(){ const name=document.getElementById('sd-name').value.trim();if(!name){toast('Plant name required');return;} const editId=document.getElementById('sd-id').value; const s={id:editId||uid(),name,qty:document.getElementById('sd-qty').value,unit:document.getElementById('sd-unit').value,source:document.getElementById('sd-source').value.trim(),year:document.getElementById('sd-year').value,germ:document.getElementById('sd-germ').value,storage:document.getElementById('sd-storage').value.trim(),notes:document.getElementById('sd-notes').value.trim()}; if(editId){const i=S.seeds.findIndex(x=>x.id===editId);if(i>-1)S.seeds[i]=s;}else S.seeds.push(s); saveState(); closeSheet('seed-sheet'); toast(editId?'Updated':'Seed added'); renderSeeds(); }
 
-function openHarvestSheet(){ ['hv-crop','hv-yield','hv-bed','hv-notes'].forEach(i=>document.getElementById(i).value=''); document.getElementById('hv-date').value=today(); document.getElementById('hv-unit').selectedIndex=0; document.getElementById('hv-quality').selectedIndex=0; openSheet('harvest-sheet'); }
-function saveHarvest(){ const crop=document.getElementById('hv-crop').value.trim();if(!crop){toast('Crop required');return;} S.harvest.push({id:uid(),crop,date:document.getElementById('hv-date').value,yield:document.getElementById('hv-yield').value,unit:document.getElementById('hv-unit').value,bed:document.getElementById('hv-bed').value.trim(),quality:document.getElementById('hv-quality').value,notes:document.getElementById('hv-notes').value.trim()}); saveState(); closeSheet('harvest-sheet'); toast('Harvest logged'); renderHarvestLog(); }
+function openHarvestSheet(){ setEditMode('harvest-sheet','','Log Harvest','Edit Harvest'); ['hv-crop','hv-yield','hv-bed','hv-notes'].forEach(i=>document.getElementById(i).value=''); document.getElementById('hv-date').value=today(); document.getElementById('hv-unit').selectedIndex=0; document.getElementById('hv-quality').selectedIndex=0; openSheet('harvest-sheet'); }
+function editHarvest(id){ const h=S.harvest.find(x=>x.id===id); if(!h) return; openHarvestSheet(); setEditMode('harvest-sheet',id,'Log Harvest','Edit Harvest'); setVal('hv-crop',h.crop); setVal('hv-date',h.date); setVal('hv-yield',h.yield); if(h.unit) setVal('hv-unit',h.unit); setVal('hv-bed',h.bed); if(h.quality) setVal('hv-quality',h.quality); setVal('hv-notes',h.notes); }
+function saveHarvest(){ const crop=document.getElementById('hv-crop').value.trim();if(!crop){toast('Crop required');return;} const editId=editingId('harvest-sheet'); upsertRec('harvest',editId,{crop,date:document.getElementById('hv-date').value,yield:document.getElementById('hv-yield').value,unit:document.getElementById('hv-unit').value,bed:document.getElementById('hv-bed').value.trim(),quality:document.getElementById('hv-quality').value,notes:document.getElementById('hv-notes').value.trim()}); saveState(); closeSheet('harvest-sheet'); toast(editId?'Harvest updated':'Harvest logged'); renderHarvestLog(); }
 
 // ═══════════════════════════════════════════════════
 // DELETE HANDLERS (Products, Sales, Butcher, Freezer, Beds, Seeds, Harvest)
@@ -1991,11 +2079,12 @@ function renderReminders(f){
     const txt=r.done?'Done':diff<0?`${Math.abs(diff)}d over`:diff===0?'Today':diff===1?'Tomorrow':`${diff}d`;
     const icon={medical:'ti-stethoscope',breeding:'ti-heart',feed:'ti-scale',garden:'ti-plant',general:'ti-bell'}[r.type]||'ti-bell';
     const a=r.animalId?S.animals.find(x=>x.id===r.animalId):null;
-    return `<div class="card" style="margin-bottom:10px"><div style="padding:12px 14px"><div style="display:flex;align-items:center;gap:10px;margin-bottom:6px"><div class="rem-icon ${r.type}" style="width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0"><i class="ti ${icon}"></i></div><div style="flex:1;font-size:15px;font-weight:600">${r.title}</div><span class="due-badge ${cls}">${txt}</span></div>${r.notes?`<div style="font-size:13px;color:var(--text2);margin-bottom:6px">${r.notes}</div>`:''}<div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:12px;color:var(--brand-mid);font-weight:600">${a?'🐾 '+a.name:''}</span><div style="display:flex;gap:10px;align-items:center"><span style="font-size:12px;color:var(--text3)">${r.done?'done '+fmt(r.doneDate||r.due):fmt(r.due)}</span>${r.done?`<button onclick="undoReminder('${r.id}')" title="Reopen" style="background:none;border:none;color:var(--text3);font-size:16px;cursor:pointer"><i class="ti ti-rotate"></i></button>`:`<button onclick="markReminderDone('${r.id}')" title="Mark done" style="background:none;border:none;color:var(--brand-mid);font-size:19px;cursor:pointer"><i class="ti ti-circle-check"></i></button>`}<button onclick="deleteReminder('${r.id}')" style="background:none;border:none;color:var(--text3);font-size:16px;cursor:pointer"><i class="ti ti-trash"></i></button></div></div></div></div>`;
+    return `<div class="card" style="margin-bottom:10px"><div style="padding:12px 14px"><div style="display:flex;align-items:center;gap:10px;margin-bottom:6px"><div class="rem-icon ${r.type}" style="width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0"><i class="ti ${icon}"></i></div><div style="flex:1;font-size:15px;font-weight:600">${r.title}</div><span class="due-badge ${cls}">${txt}</span></div>${r.notes?`<div style="font-size:13px;color:var(--text2);margin-bottom:6px">${r.notes}</div>`:''}<div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:12px;color:var(--brand-mid);font-weight:600">${a?'🐾 '+a.name:''}</span><div style="display:flex;gap:10px;align-items:center"><span style="font-size:12px;color:var(--text3)">${r.done?'done '+fmt(r.doneDate||r.due):fmt(r.due)}</span>${r.done?`<button onclick="undoReminder('${r.id}')" title="Reopen" style="background:none;border:none;color:var(--text3);font-size:16px;cursor:pointer"><i class="ti ti-rotate"></i></button>`:`<button onclick="markReminderDone('${r.id}')" title="Mark done" style="background:none;border:none;color:var(--brand-mid);font-size:19px;cursor:pointer"><i class="ti ti-circle-check"></i></button>`}<button onclick="editReminder('${r.id}')" style="background:none;border:none;color:var(--text3);font-size:16px;cursor:pointer"><i class="ti ti-pencil"></i></button><button onclick="deleteReminder('${r.id}')" style="background:none;border:none;color:var(--text3);font-size:16px;cursor:pointer"><i class="ti ti-trash"></i></button></div></div></div></div>`;
   }).join(''):`<div class="empty-state"><div class="empty-icon">🔔</div><div class="empty-text">No ${f} reminders</div></div>`;
 }
 
 function resetReminderForm(){
+  setEditMode('reminder-sheet','','Add Reminder','Edit Reminder');
   ['r-title','r-notes'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('r-type').selectedIndex=0;
   document.getElementById('r-due').value='';
@@ -2003,11 +2092,21 @@ function resetReminderForm(){
   sel.innerHTML='<option value="">— No specific animal —</option>'+[...S.animals].sort(byName).map(a=>`<option value="${a.id}">${a.name} (${a.species})</option>`).join('');
 }
 
+function editReminder(id){
+  const r=S.reminders.find(x=>x.id===id); if(!r) return;
+  resetReminderForm(); setEditMode('reminder-sheet',id,'Add Reminder','Edit Reminder');
+  setVal('r-title',r.title); if(r.type) setVal('r-type',r.type); setVal('r-animal',r.animalId); setVal('r-due',r.due); setVal('r-notes',r.notes);
+  openSheet('reminder-sheet');
+}
+
 function saveReminder(){
   const title=document.getElementById('r-title').value.trim(), due=document.getElementById('r-due').value;
   if(!title||!due){ toast('Title and due date required'); return; }
-  S.reminders.push({id:uid(),title,type:document.getElementById('r-type').value,animalId:document.getElementById('r-animal').value||null,due,notes:document.getElementById('r-notes').value.trim(),created:Date.now()});
-  saveState(); closeSheet('reminder-sheet'); toast('Reminder saved'); renderReminders(remFilter); renderHome();
+  const editId=editingId('reminder-sheet');
+  const fields={title,type:document.getElementById('r-type').value,animalId:document.getElementById('r-animal').value||null,due,notes:document.getElementById('r-notes').value.trim()};
+  if(!editId) fields.created=Date.now();
+  upsertRec('reminders',editId,fields);
+  saveState(); closeSheet('reminder-sheet'); toast(editId?'Reminder updated':'Reminder saved'); renderReminders(remFilter); renderHome();
 }
 
 function markReminderDone(id){
