@@ -239,6 +239,21 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sa
 .babies-group .kid-thumb{width:34px;height:34px;font-size:18px;border-radius:8px}
 .babies-group-name{font-size:13px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:0.5px}
 
+/* ── HOW-TO ── */
+.howto-link{display:flex;align-items:center;gap:12px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);margin:12px 16px 0;padding:14px;cursor:pointer}
+.howto-link:active{transform:scale(0.98)}
+.howto-link-icon{width:40px;height:40px;border-radius:10px;background:var(--teal-pale);color:var(--teal);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0}
+.howto-item{border-bottom:1px solid var(--border)}
+.howto-item:last-child{border-bottom:none}
+.howto-head{display:flex;align-items:center;gap:8px;padding:12px 14px;cursor:pointer;font-size:15px;font-weight:600;color:var(--text)}
+.howto-head i.chev{color:var(--text3);font-size:16px;transition:transform 0.15s}
+.howto-item.open .howto-head i.chev{transform:rotate(90deg)}
+.howto-body{display:none;padding:0 14px 12px;font-size:14px;line-height:1.55;color:var(--text2);white-space:pre-wrap}
+.howto-item.open .howto-body{display:block}
+.howto-actions{display:none;justify-content:flex-end;gap:14px;padding:0 14px 12px}
+.howto-item.open .howto-actions{display:flex}
+.howto-actions button{background:none;border:none;color:var(--text3);font-size:13px;cursor:pointer;display:flex;align-items:center;gap:4px;font-family:inherit}
+
 /* ── TOAST ── */
 .toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:var(--brand);color:var(--brand-pale);padding:10px 20px;border-radius:20px;font-size:14px;font-weight:600;z-index:999;display:none;white-space:nowrap;pointer-events:none}
 .toast.show{display:block}
@@ -277,6 +292,11 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sa
         <div class="dash-g-sub" id="dash-date"></div>
       </div>
       <div class="stats-row" id="home-stats"></div>
+      <div class="howto-link" onclick="switchTab('howto')">
+        <div class="howto-link-icon"><i class="ti ti-book"></i></div>
+        <div style="flex:1"><div style="font-size:15px;font-weight:700">Homestead How-To</div><div style="font-size:12px;color:var(--text3)">Natural cleaners, recipes &amp; know-how</div></div>
+        <i class="ti ti-chevron-right" style="color:var(--text3);font-size:16px"></i>
+      </div>
       <div class="section-label">Upcoming reminders</div>
       <div id="home-reminders"></div>
       <div class="section-label">Recent animals</div>
@@ -367,6 +387,17 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sa
         <button class="seg-btn" onclick="remSeg('all')">All</button>
       </div>
       <div id="reminders-list"></div>
+    </div>
+
+    <!-- HOMESTEAD HOW-TO -->
+    <div class="page" id="page-howto">
+      <div class="page-header">
+        <div class="page-title">How-To</div>
+        <button class="btn-add" onclick="openHowtoSheet()"><i class="ti ti-plus"></i>Add</button>
+      </div>
+      <div class="search-bar"><div class="search-wrap"><i class="ti ti-search"></i><input class="search-input" type="text" placeholder="Search recipes &amp; how-tos…" id="howto-search" oninput="renderHowto()"></div></div>
+      <div class="filter-chips" id="howto-chips"></div>
+      <div id="howto-list"></div>
     </div>
 
     <div class="page" id="page-log">
@@ -852,6 +883,25 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sa
   </div>
 </div>
 
+<!-- HOW-TO SHEET -->
+<div class="sheet-overlay" id="howto-sheet">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-header"><div class="sheet-title" id="howto-sheet-title">Add How-To</div><button class="sheet-close" onclick="closeSheet('howto-sheet')">✕</button></div>
+    <div class="sheet-body">
+      <div class="fg"><label class="fl">Title *</label><input class="fi" id="ht-title" placeholder="Fly spray for goats"></div>
+      <div class="fg"><label class="fl">Category</label>
+        <input class="fi" id="ht-category" list="ht-cat-list" placeholder="Pick one or type a new one">
+        <datalist id="ht-cat-list"></datalist>
+      </div>
+      <div class="fg"><label class="fl">Recipe / Steps</label><textarea class="ft" id="ht-body" style="min-height:240px" placeholder="Ingredients, steps, notes…"></textarea></div>
+      <input type="hidden" id="ht-id">
+      <button class="btn-primary" onclick="saveHowto()">Save</button>
+      <button class="btn-secondary" onclick="closeSheet('howto-sheet')">Cancel</button>
+    </div>
+  </div>
+</div>
+
 <!-- BIRTH (KIDDING) SHEET -->
 <div class="sheet-overlay" id="birth-sheet">
   <div class="sheet">
@@ -874,7 +924,7 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sa
 // DATA
 // ═══════════════════════════════════════════════════
 const PASSWORD = 'roper2024';
-let S = { animals:[], medical:[], breeding:[], feed:[], milk:[], products:[], sales:[], butcher:[], freezer:[], beds:[], seeds:[], harvest:[], reminders:[], ranch_log:[] };
+let S = { animals:[], medical:[], breeding:[], feed:[], milk:[], products:[], sales:[], butcher:[], freezer:[], beds:[], seeds:[], harvest:[], reminders:[], ranch_log:[], howto:[] };
 
 // ── SUPABASE ──
 // Shared cloud database so both phones read/write the same data.
@@ -889,7 +939,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
   auth:{ persistSession:false, autoRefreshToken:false, detectSessionInUrl:false, storageKey:'rir-ranch-noauth' }
 });
 
-const TABLES = ['animals','medical','breeding','feed','milk','products','sales','butcher','freezer','beds','seeds','harvest','reminders','ranch_log'];
+const TABLES = ['animals','medical','breeding','feed','milk','products','sales','butcher','freezer','beds','seeds','harvest','reminders','ranch_log','howto'];
 // Only a few fields are named differently in the database (snake_case columns);
 // everything else matches the app's field names exactly.
 const COL_RENAME = {
@@ -1053,7 +1103,7 @@ async function applyRealtime(){
 // Re-renders whatever's currently on screen; used after a realtime update
 // arrives from the other phone.
 function renderCurrentView(){
-  setGreeting(); renderHome(); renderAnimals(); milkSeg(milkTab||'milk'); butcherSeg(butcherTab||'records'); gardenSeg(gardenTab||'beds'); renderReminders(remFilter||'upcoming'); renderLog();
+  setGreeting(); renderHome(); renderAnimals(); milkSeg(milkTab||'milk'); butcherSeg(butcherTab||'records'); gardenSeg(gardenTab||'beds'); renderReminders(remFilter||'upcoming'); renderLog(); renderHowto();
   if(currentAnimalId && document.getElementById('page-detail').classList.contains('active')) openDetail(currentAnimalId);
 }
 
@@ -1109,7 +1159,7 @@ function initApp(){
   setGreeting(); renderHome(); renderAnimals(); renderMilk('milk'); renderButcher('records'); gardenSeg('beds'); renderReminders('upcoming');
 }
 
-const TAB_TITLES={home:'Roped In Ranch',animals:'Animals',milk:'Milk & Products',butcher:'Butcher & Freezer',garden:'Garden',reminders:'Reminders',log:'Ranch Log'};
+const TAB_TITLES={home:'Roped In Ranch',animals:'Animals',milk:'Milk & Products',butcher:'Butcher & Freezer',garden:'Garden',reminders:'Reminders',log:'Ranch Log',howto:'Homestead How-To'};
 
 function switchTab(tab){
   if(tab===currentTab && tab!=='animals') return;
@@ -1127,6 +1177,7 @@ function switchTab(tab){
   if(tab==='garden'){ gardenSeg('beds'); }
   if(tab==='reminders') renderReminders(remFilter);
   if(tab==='log') renderLog();
+  if(tab==='howto') renderHowto();
 }
 
 function headerAdd(){
@@ -2525,6 +2576,72 @@ function saveBirth(){
   saveState(); closeSheet('birth-sheet');
   toast(`${names.length} ${names.length===1?W.baby.toLowerCase():W.babies.toLowerCase()} added to the herd 🎉`);
   openDetail(mom.id); renderAnimals(); renderHome(); renderReminders(remFilter);
+}
+
+// ═══════════════════════════════════════════════════
+// HOMESTEAD HOW-TO — natural cleaners, recipes, know-how (Nov 2026)
+// Each entry: title, category, body (plain text, line breaks kept).
+// Synced like everything else through the "howto" table.
+// ═══════════════════════════════════════════════════
+const HOWTO_CAT_ORDER=['Furniture & Leather','Kitchen & House','Carpet & Pets','Laundry','Barn & Ranch','Safety'];
+let howtoFilter='All', howtoOpen=new Set();
+
+function howtoCats(){
+  const used=[...new Set((S.howto||[]).map(h=>h.category||'Other'))];
+  return used.sort((a,b)=>{ const ia=HOWTO_CAT_ORDER.indexOf(a), ib=HOWTO_CAT_ORDER.indexOf(b); return (ia<0?99:ia)-(ib<0?99:ib)||a.localeCompare(b); });
+}
+function setHowtoFilter(c){ howtoFilter=c; renderHowto(); }
+function toggleHowto(id){ howtoOpen.has(id)?howtoOpen.delete(id):howtoOpen.add(id); document.getElementById('hti-'+id)?.classList.toggle('open'); }
+
+function renderHowto(){
+  const el=document.getElementById('howto-list'); if(!el) return;
+  const cats=howtoCats();
+  if(howtoFilter!=='All'&&!cats.includes(howtoFilter)) howtoFilter='All';
+  document.getElementById('howto-chips').innerHTML=['All',...cats].map(c=>`<div class="chip${c===howtoFilter?' active':''}" onclick="setHowtoFilter('${c.replace(/'/g,"\\'")}')">${esc(c)}</div>`).join('');
+  const q=(document.getElementById('howto-search')?.value||'').toLowerCase();
+  const list=(S.howto||[]).filter(h=>(howtoFilter==='All'||(h.category||'Other')===howtoFilter)&&(!q||(h.title||'').toLowerCase().includes(q)||(h.body||'').toLowerCase().includes(q)));
+  const groups=cats.filter(c=>list.some(h=>(h.category||'Other')===c));
+  el.innerHTML=groups.length?groups.map(c=>{
+    const items=list.filter(h=>(h.category||'Other')===c).sort((a,b)=>(+a.created||0)-(+b.created||0));
+    return `<div class="section-label">${esc(c)}</div><div class="card">${items.map(h=>`
+      <div class="howto-item${howtoOpen.has(h.id)||q?' open':''}" id="hti-${h.id}">
+        <div class="howto-head" onclick="toggleHowto('${h.id}')"><span style="flex:1">${esc(h.title)}</span><i class="ti ti-chevron-right chev"></i></div>
+        <div class="howto-body">${esc(h.body||'')}</div>
+        <div class="howto-actions">
+          <button onclick="openHowtoSheet('${h.id}')"><i class="ti ti-pencil"></i>Edit</button>
+          <button onclick="deleteHowto('${h.id}')"><i class="ti ti-trash"></i>Delete</button>
+        </div>
+      </div>`).join('')}</div>`;
+  }).join(''):`<div class="empty-state"><div class="empty-icon">📖</div><div class="empty-text">${(S.howto||[]).length?'No matches':'Nothing here yet'}</div><div class="empty-sub">${(S.howto||[]).length?'Try a different search':'Tap Add to save a recipe or how-to'}</div></div>`;
+}
+
+function openHowtoSheet(id){
+  const h=id?(S.howto||[]).find(x=>x.id===id):null;
+  document.getElementById('howto-sheet-title').textContent=h?'Edit How-To':'Add How-To';
+  setVal('ht-title',h?h.title:''); setVal('ht-body',h?h.body:''); setVal('ht-id',h?h.id:'');
+  setVal('ht-category',h?h.category:(howtoFilter!=='All'?howtoFilter:''));
+  const all=[...new Set([...HOWTO_CAT_ORDER,...howtoCats()])];
+  document.getElementById('ht-cat-list').innerHTML=all.map(c=>`<option value="${esc(c)}">`).join('');
+  openSheet('howto-sheet');
+}
+
+function saveHowto(){
+  const title=document.getElementById('ht-title').value.trim();
+  if(!title){ toast('Title required'); return; }
+  const editId=document.getElementById('ht-id').value;
+  const fields={title,category:document.getElementById('ht-category').value.trim()||'Other',body:document.getElementById('ht-body').value.trim()};
+  if(!editId) fields.created=String(Date.now());
+  S.howto=S.howto||[];
+  const rec=upsertRec('howto',editId,fields);
+  howtoOpen.add(rec.id);
+  saveState(); closeSheet('howto-sheet'); toast(editId?'Updated':'Saved'); renderHowto();
+}
+
+function deleteHowto(id){
+  const h=(S.howto||[]).find(x=>x.id===id);
+  if(!confirm(`Delete "${h?h.title:'this'}"?`)) return;
+  S.howto=S.howto.filter(x=>x.id!==id); howtoOpen.delete(id);
+  saveState(); toast('Deleted'); renderHowto();
 }
 
 // ═══════════════════════════════════════════════════
