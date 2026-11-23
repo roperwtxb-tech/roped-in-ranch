@@ -287,11 +287,20 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sa
         <div style="flex:1"><div style="font-size:15px;font-weight:700">Open the Field Guide</div><div style="font-size:12px;color:var(--text3)">Canning, garden, remedies, livestock &amp; natural cleaners</div></div>
         <i class="ti ti-external-link" style="color:var(--text3);font-size:16px"></i>
       </a>
+      <div class="guide-link" style="cursor:pointer" onclick="switchTab('sitter')">
+        <div class="guide-link-icon" style="background:var(--blue-pale);color:var(--blue)"><i class="ti ti-user-heart"></i></div>
+        <div style="flex:1"><div style="font-size:15px;font-weight:700">Sitter Sheet</div><div style="font-size:12px;color:var(--text3)">Feeding, dogs, checks &amp; contacts to send whoever's watching the place</div></div>
+        <i class="ti ti-chevron-right" style="color:var(--text3);font-size:16px"></i>
+      </div>
       <div class="section-label">Upcoming reminders</div>
       <div id="home-reminders"></div>
       <div class="section-label">Recent animals</div>
       <div id="home-animals"></div>
-      <div style="text-align:center;padding:26px 16px 10px">
+      <div style="text-align:center;padding:22px 16px 0;font-size:12.5px;color:var(--text3)">Our apps: <strong style="color:var(--text2)">Ranch</strong> · <a href="https://roperwtxb-tech.github.io/homestead-guide/homestead-guide.html" target="_blank" rel="noopener" style="color:var(--brand-mid)">Field Guide</a> · <a href="https://roperwtxb-tech.github.io/roper-diet-guide/" target="_blank" rel="noopener" style="color:var(--brand-mid)">Diet Guide</a></div>
+      <div style="text-align:center;padding:16px 16px 0">
+        <button onclick="downloadBackup(false)" style="background:none;border:none;color:var(--brand-mid);font-size:13px;font-family:inherit;cursor:pointer"><i class="ti ti-download"></i> Download a backup (Excel)</button>
+      </div>
+      <div style="text-align:center;padding:8px 16px 10px">
         <button onclick="signOut()" style="background:none;border:none;color:var(--text3);font-size:12.5px;font-family:inherit;cursor:pointer;text-decoration:underline">Sign out on this phone</button>
       </div>
     </div>
@@ -379,15 +388,28 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sa
       <div id="reminders-list"></div>
     </div>
 
+    <!-- SITTER SHEET -->
+    <div class="page" id="page-sitter">
+      <div class="page-header"><div class="page-title">Sitter Sheet</div></div>
+      <div id="sitter-body"></div>
+    </div>
+
     <div class="page" id="page-log">
       <div class="page-header">
         <div class="page-title">Ranch Log</div>
         <button class="btn-add" onclick="openSheet('log-sheet',resetLogForm)"><i class="ti ti-plus"></i>Add</button>
       </div>
+      <div class="seg-control" id="log-views">
+        <button class="seg-btn active" onclick="setLogView('entries')">Entries</button>
+        <button class="seg-btn" onclick="setLogView('money')">Money</button>
+      </div>
+      <div id="money-section" style="display:none"></div>
+      <div id="log-entries-wrap">
       <div class="search-bar"><div class="search-wrap"><i class="ti ti-search"></i><input class="search-input" type="text" placeholder="Search the log…" id="log-search" oninput="renderLog()"></div></div>
       <div class="filter-chips" id="log-chips"></div>
       <div id="log-total"></div>
       <div id="log-list"></div>
+      </div>
     </div>
   </div>
 
@@ -862,6 +884,20 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sa
   </div>
 </div>
 
+<!-- SITTER SECTION SHEET -->
+<div class="sheet-overlay" id="sitter-sheet">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-header"><div class="sheet-title" id="sitter-sheet-title">Sitter Sheet</div><button class="sheet-close" onclick="closeSheet('sitter-sheet')">✕</button></div>
+    <div class="sheet-body">
+      <div class="fg"><textarea class="ft" id="st-body" style="min-height:240px"></textarea></div>
+      <input type="hidden" id="st-id">
+      <button class="btn-primary" onclick="saveSitter()">Save</button>
+      <button class="btn-secondary" onclick="closeSheet('sitter-sheet')">Cancel</button>
+    </div>
+  </div>
+</div>
+
 <!-- BIRTH (KIDDING) SHEET -->
 <div class="sheet-overlay" id="birth-sheet">
   <div class="sheet">
@@ -884,7 +920,7 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sa
 // DATA
 // ═══════════════════════════════════════════════════
 const PASSWORD = 'roper2024';
-let S = { animals:[], medical:[], breeding:[], feed:[], milk:[], products:[], sales:[], butcher:[], freezer:[], beds:[], seeds:[], harvest:[], reminders:[], ranch_log:[] };
+let S = { animals:[], medical:[], breeding:[], feed:[], milk:[], products:[], sales:[], butcher:[], freezer:[], beds:[], seeds:[], harvest:[], reminders:[], ranch_log:[], sitter:[] };
 
 // ── SUPABASE ──
 // Shared cloud database so both phones read/write the same data.
@@ -899,7 +935,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
   auth:{ persistSession:false, autoRefreshToken:false, detectSessionInUrl:false, storageKey:'rir-ranch-noauth' }
 });
 
-const TABLES = ['animals','medical','breeding','feed','milk','products','sales','butcher','freezer','beds','seeds','harvest','reminders','ranch_log'];
+const TABLES = ['animals','medical','breeding','feed','milk','products','sales','butcher','freezer','beds','seeds','harvest','reminders','ranch_log','sitter'];
 // Only a few fields are named differently in the database (snake_case columns);
 // everything else matches the app's field names exactly.
 const COL_RENAME = {
@@ -1063,7 +1099,7 @@ async function applyRealtime(){
 // Re-renders whatever's currently on screen; used after a realtime update
 // arrives from the other phone.
 function renderCurrentView(){
-  setGreeting(); renderHome(); renderAnimals(); milkSeg(milkTab||'milk'); butcherSeg(butcherTab||'records'); gardenSeg(gardenTab||'beds'); renderReminders(remFilter||'upcoming'); renderLog();
+  setGreeting(); renderHome(); renderAnimals(); milkSeg(milkTab||'milk'); butcherSeg(butcherTab||'records'); gardenSeg(gardenTab||'beds'); renderReminders(remFilter||'upcoming'); renderLog(); if(logView==='money') renderMoney(); renderSitter();
   if(currentAnimalId && document.getElementById('page-detail').classList.contains('active')) openDetail(currentAnimalId);
 }
 
@@ -1119,7 +1155,7 @@ function initApp(){
   setGreeting(); renderHome(); renderAnimals(); renderMilk('milk'); renderButcher('records'); gardenSeg('beds'); renderReminders('upcoming');
 }
 
-const TAB_TITLES={home:'Roped In Ranch',animals:'Animals',milk:'Milk & Products',butcher:'Butcher & Freezer',garden:'Garden',reminders:'Reminders',log:'Ranch Log'};
+const TAB_TITLES={home:'Roped In Ranch',animals:'Animals',milk:'Milk & Products',butcher:'Butcher & Freezer',garden:'Garden',reminders:'Reminders',log:'Ranch Log',sitter:'Sitter Sheet'};
 
 function switchTab(tab){
   if(tab===currentTab && tab!=='animals') return;
@@ -1136,7 +1172,8 @@ function switchTab(tab){
   if(tab==='butcher'){ butcherSeg('records'); }
   if(tab==='garden'){ gardenSeg('beds'); }
   if(tab==='reminders') renderReminders(remFilter);
-  if(tab==='log') renderLog();
+  if(tab==='log') setLogView(logView);
+  if(tab==='sitter') renderSitter();
 }
 
 function headerAdd(){
@@ -1742,6 +1779,7 @@ function renderMilk(){
       <div class="card-header"><div class="card-header-left"><i class="ti ti-droplet"></i>Milk Log</div></div>
       ${logs.length?logs.slice(0,30).map(m=>{ const a=S.animals.find(x=>x.id===m.animalId); return `<div class="milk-row"><span class="milk-date">${fmt(m.date)}</span><span class="milk-animal">${a?a.name:'Unknown'} · ${m.session||'AM'}</span><span class="milk-qty">${m.qty} oz</span><button onclick="editMilkLog('${m.id}')" style="background:none;border:none;color:var(--text3);font-size:15px;cursor:pointer;padding:0 0 0 6px"><i class="ti ti-pencil"></i></button></div>`; }).join(''):`<div class="list-item" style="color:var(--text3);font-size:13px">No milk logs yet</div>`}
     </div>
+    <a href="${FIELD_GUIDE_URL}#livestock/goats/l-goat-milk" target="_blank" rel="noopener" style="display:block;margin:4px 16px 0;font-size:13px;color:var(--brand-mid)"><i class="ti ti-book"></i> Milking &amp; chilling tips in the Field Guide</a>
   `;
 }
 
@@ -2209,6 +2247,7 @@ function editLog(id){
   openSheet('log-sheet');
 }
 
+function saveLogAndMoney(){ if(logView==='money') renderMoney(); }
 function saveLog(){
   const title=document.getElementById('g-title').value.trim();
   const date=document.getElementById('g-date').value;
@@ -2224,7 +2263,7 @@ function saveLog(){
   };
   if(editId){ const i=S.ranch_log.findIndex(x=>x.id===editId); if(i>-1) S.ranch_log[i]=rec; }
   else S.ranch_log.push(rec);
-  saveState(); closeSheet('log-sheet'); toast(editId?'Entry updated':'Logged'); renderLog();
+  saveState(); closeSheet('log-sheet'); toast(editId?'Entry updated':'Logged'); renderLog(); saveLogAndMoney();
 }
 
 function deleteLog(id){
@@ -2501,6 +2540,187 @@ function saveBirth(){
   saveState(); closeSheet('birth-sheet');
   toast(`${names.length} ${names.length===1?W.baby.toLowerCase():W.babies.toLowerCase()} added to the herd 🎉`);
   openDetail(mom.id); renderAnimals(); renderHome(); renderReminders(remFilter);
+}
+
+// ═══════════════════════════════════════════════════
+// SITTER SHEET (Nov 2026)
+// Care instructions for whoever watches the ranch. Sections live in the
+// "sitter" table (id, title, body, sort) so both phones share them. Dogs come
+// straight from the Animals list. Share sends it all through the phone's
+// share menu, with dog photos attached when the phone allows it.
+// ═══════════════════════════════════════════════════
+const SITTER_HINTS={
+  'trip':'Dates you\'re gone, when you\'ll be back, anything special this trip (a doe close to kidding, a sick animal, a delivery coming)…',
+  'feed-goats':'Morning: what, how much, where it\'s kept.\nEvening: …\nWater: …\nLick tubs / minerals: …',
+  'feed-dogs':'Morning: …\nEvening: …\nWhich dogs stay with the goats, which come inside…',
+  'feed-horses':'Morning: hay, how much…\nEvening: …\nWater trough: …',
+  'feed-poultry':'Feed, water, collecting eggs, closing the coop at dark…',
+  'feed-pigs':'Feed, how much, water, keeping the pen shut…',
+  'checks':'Walk the fence line, check every water trough, count the goats, lock the feed room…',
+  'emergency':'Sean: \nJess: \nHarry (backup): \nVet: \nAfter-hours vet: '
+};
+function sitterRows(){ return [...(S.sitter||[])].sort((a,b)=>(+a.sort||99)-(+b.sort||99)); }
+function sitterDogs(){ return S.animals.filter(a=>a.species==='Dog'&&isAlive(a)).sort(byName); }
+function renderSitter(){
+  const el=document.getElementById('sitter-body'); if(!el) return;
+  const secs=sitterRows();
+  const card=r=>`<div class="card" style="margin-bottom:10px">
+      <div class="card-header"><div class="card-header-left"><i class="ti ${r.id==='trip'?'ti-luggage':r.id==='checks'?'ti-checklist':r.id==='emergency'?'ti-phone':'ti-bowl'}"></i>${esc(r.title)}</div>
+        <button onclick="openSitterSheet('${r.id}')" style="background:none;border:none;color:var(--text3);font-size:16px;cursor:pointer"><i class="ti ti-pencil"></i></button></div>
+      <div style="padding:12px 14px;font-size:14px;line-height:1.5;white-space:pre-wrap;color:${r.body?'var(--text)':'var(--text3)'}">${r.body?esc(r.body):'Tap the pencil to fill this in.'}</div>
+    </div>`;
+  const trip=secs.filter(r=>r.id==='trip'), feed=secs.filter(r=>r.id.startsWith('feed-')), rest=secs.filter(r=>r.id!=='trip'&&!r.id.startsWith('feed-'));
+  const dogs=sitterDogs();
+  el.innerHTML=`
+    <button class="btn-primary" style="margin:0 16px 14px;width:calc(100% - 32px);display:flex;align-items:center;justify-content:center;gap:8px" onclick="shareSitter()"><i class="ti ti-share"></i>Send to the sitter</button>
+    ${trip.map(card).join('')}
+    <div class="section-label">Feeding</div>${feed.map(card).join('')}
+    <div class="section-label">Dogs (${dogs.length})</div>
+    <div class="card" style="margin-bottom:10px">
+      ${dogs.length?dogs.map(d=>`<div class="kid-tile" onclick="openDetail('${d.id}')">${thumbHtml(d)}<div style="flex:1;min-width:0"><div style="font-weight:700;font-size:15px">${esc(d.name)}</div><div style="font-size:12px;color:var(--text3)">${esc([d.breed,d.sex].filter(Boolean).join(' · '))}</div>${d.markings?`<div class="kid-markings">${esc(d.markings)}</div>`:''}${d.notes?`<div class="kid-markings">${esc(d.notes)}</div>`:''}</div></div>`).join(''):'<div class="list-item" style="color:var(--text3);font-size:13px">No dogs in the Animals list yet</div>'}
+      <div style="padding:8px 14px 12px;font-size:12px;color:var(--text3)">Photos, markings and notes come from each dog's page in Animals. Add notes there a stranger would need ("stays with the goats", "will bolt out the gate").</div>
+    </div>
+    ${rest.map(card).join('')}`;
+}
+function openSitterSheet(id){
+  const r=(S.sitter||[]).find(x=>x.id===id); if(!r) return;
+  document.getElementById('sitter-sheet-title').textContent=r.title;
+  setVal('st-id',id); setVal('st-body',r.body);
+  document.getElementById('st-body').placeholder=SITTER_HINTS[id]||'';
+  openSheet('sitter-sheet');
+}
+function saveSitter(){
+  const id=document.getElementById('st-id').value, r=(S.sitter||[]).find(x=>x.id===id); if(!r) return;
+  r.body=document.getElementById('st-body').value.trim()||null;
+  saveState(); closeSheet('sitter-sheet'); toast('Saved'); renderSitter();
+}
+function sitterText(){
+  const secs=sitterRows(), get=id=>secs.find(r=>r.id===id);
+  let t='ROPED IN RANCH — SITTER SHEET\n';
+  const trip=get('trip'); if(trip&&trip.body) t+='\n'+trip.body+'\n';
+  t+='\nFEEDING\n';
+  secs.filter(r=>r.id.startsWith('feed-')&&r.body).forEach(r=>{ t+='\n'+r.title.toUpperCase()+'\n'+r.body+'\n'; });
+  const dogs=sitterDogs();
+  if(dogs.length){ t+='\nDOGS ('+dogs.length+') — photos attached\n'; dogs.forEach(d=>{ t+='• '+d.name+(d.breed?' ('+d.breed+')':'')+(d.markings?': '+d.markings:'')+(d.notes?' — '+d.notes:'')+'\n'; }); }
+  secs.filter(r=>!r.id.startsWith('feed-')&&r.id!=='trip'&&r.body).forEach(r=>{ t+='\n'+r.title.toUpperCase()+'\n'+r.body+'\n'; });
+  return t;
+}
+async function shareSitter(){
+  const text=sitterText();
+  let files=[];
+  try{
+    for(const d of sitterDogs()){
+      if(!d.photo) continue;
+      const blob=await (await fetch(d.photo)).blob();
+      files.push(new File([blob],d.name.replace(/[^\w\- ]/g,'')+'.jpg',{type:'image/jpeg'}));
+    }
+  }catch(e){ files=[]; }
+  try{
+    if(files.length&&navigator.canShare&&navigator.canShare({files})){ await navigator.share({title:'Sitter Sheet',text,files}); return; }
+    if(navigator.share){ await navigator.share({title:'Sitter Sheet',text}); if(files.length) toast('Sent without photos — this phone can\'t attach them'); return; }
+  }catch(e){ if(e&&e.name==='AbortError') return; }
+  try{ await navigator.clipboard.writeText(text); toast('Copied — paste it into a text or email'); }
+  catch(e){ toast('Sharing isn\'t available on this phone'); }
+}
+
+// ═══════════════════════════════════════════════════
+// MONEY (Nov 2026) — one view of everything the ranch made and spent.
+// Pulls from: animals marked Sold (price), Sales records (product / meat),
+// and the Ranch Log (Income entries and costs). Nothing is copied or moved;
+// a Ranch Log "Income" entry that matches a sale (same amount, within 3 days)
+// is treated as the same money and only counted once.
+// ═══════════════════════════════════════════════════
+let logView='entries', moneyYear=String(new Date().getFullYear()), moneyOpen=null;
+function setLogView(v){
+  logView=v;
+  document.querySelectorAll('#log-views .seg-btn').forEach((b,i)=>b.classList.toggle('active',['entries','money'][i]===v));
+  ['log-entries-wrap'].forEach(id=>document.getElementById(id).style.display=v==='entries'?'block':'none');
+  document.getElementById('money-section').style.display=v==='money'?'block':'none';
+  if(v==='money') renderMoney(); else renderLog();
+}
+function moneyItems(){
+  const out=[];
+  S.animals.filter(a=>a.status==='Sold'&&+a.soldPrice>0).forEach(a=>out.push({kind:'in',source:'Animals sold',date:a.soldDate||'',amount:+a.soldPrice,label:a.name+(a.soldTo?' → '+a.soldTo:''),open:()=>openDetail(a.id)}));
+  S.sales.filter(s=>+s.amount>0).forEach(s=>out.push({kind:'in',source:s.type==='meat'?'Meat sales':'Product sales',date:s.date||'',amount:+s.amount,label:s.item+(s.buyer?' → '+s.buyer:''),ref:'sale:'+s.id}));
+  S.ranch_log.filter(e=>+e.amount>0).forEach(e=>{
+    if(e.category==='Income') out.push({kind:'in',source:'Other income',date:e.date||'',amount:+e.amount,label:e.title,logId:e.id});
+    else out.push({kind:'out',source:e.category||'Other',date:e.date||'',amount:+e.amount,label:e.title,logId:e.id});
+  });
+  // Same money entered twice? A Log "Income" line that matches an animal sale or a Sales record.
+  const sales=out.filter(x=>x.kind==='in'&&x.source!=='Other income');
+  out.forEach(x=>{
+    if(x.source!=='Other income') return;
+    const d=new Date(x.date);
+    x.dupOf=sales.find(s=>Math.abs(s.amount-x.amount)<0.01&&Math.abs((new Date(s.date)-d)/86400000)<=3);
+  });
+  return out;
+}
+function setMoneyYear(y){ moneyYear=y; moneyOpen=null; renderMoney(); }
+function toggleMoneyGroup(k){ moneyOpen=moneyOpen===k?null:k; renderMoney(); }
+function renderMoney(){
+  const el=document.getElementById('money-section');
+  const all=moneyItems();
+  const years=[...new Set(all.map(x=>(x.date||'').slice(0,4)).filter(Boolean))].sort().reverse();
+  if(!years.includes(moneyYear)&&moneyYear!=='All') years.unshift(moneyYear);
+  const list=all.filter(x=>moneyYear==='All'||(x.date||'').startsWith(moneyYear));
+  const counted=list.filter(x=>!x.dupOf);
+  const inc=counted.filter(x=>x.kind==='in').reduce((t,x)=>t+x.amount,0);
+  const exp=counted.filter(x=>x.kind==='out').reduce((t,x)=>t+x.amount,0);
+  const group=kind=>{ const g={}; counted.filter(x=>x.kind===kind).forEach(x=>{(g[x.source]=g[x.source]||[]).push(x);}); return Object.entries(g).sort((a,b)=>b[1].reduce((t,x)=>t+x.amount,0)-a[1].reduce((t,x)=>t+x.amount,0)); };
+  const rows=(kind,color)=>group(kind).map(([src,items])=>{
+    const key=kind+':'+src, tot=items.reduce((t,x)=>t+x.amount,0);
+    return `<div class="card-row" style="cursor:pointer" onclick="toggleMoneyGroup('${key.replace(/'/g,"\\'")}')"><span class="card-key">${esc(src)} <span style="font-size:11px;color:var(--text3)">(${items.length})</span></span><span class="card-val" style="color:${color};font-weight:700">${money(tot)}</span></div>`+
+      (moneyOpen===key?items.sort((a,b)=>(b.date||'').localeCompare(a.date||'')).map(x=>`<div style="display:flex;justify-content:space-between;gap:8px;padding:7px 14px 7px 24px;font-size:13px;border-bottom:1px solid var(--border);background:var(--bg)"><span style="color:var(--text2)">${fmt(x.date)||'—'} · ${esc(x.label)}</span><span style="white-space:nowrap">${money(x.amount)}</span></div>`).join(''):'');
+  }).join('')||`<div class="card-row"><span class="card-key" style="color:var(--text3)">Nothing yet</span></div>`;
+  const dups=list.filter(x=>x.dupOf);
+  el.innerHTML=`
+    <div class="filter-chips">${[...years,'All'].map(y=>`<div class="chip${y===moneyYear?' active':''}" onclick="setMoneyYear('${y}')">${y==='All'?'All years':y}</div>`).join('')}</div>
+    <div class="stats-row" style="grid-template-columns:repeat(3,1fr);margin-bottom:10px">
+      <div class="stat-card"><div class="stat-num" style="font-size:18px;color:var(--green)">${money(inc)}</div><div class="stat-label">Money in</div></div>
+      <div class="stat-card"><div class="stat-num" style="font-size:18px;color:var(--brand-mid)">${money(exp)}</div><div class="stat-label">Money out</div></div>
+      <div class="stat-card"><div class="stat-num" style="font-size:18px;color:${inc-exp>=0?'var(--green)':'var(--red)'}">${inc-exp<0?'−':''}${money(Math.abs(inc-exp))}</div><div class="stat-label">Net</div></div>
+    </div>
+    <div class="card" style="margin-bottom:10px"><div class="card-header"><div class="card-header-left"><i class="ti ti-arrow-down-left"></i>Money in</div></div>${rows('in','var(--green)')}</div>
+    <div class="card" style="margin-bottom:10px"><div class="card-header"><div class="card-header-left"><i class="ti ti-arrow-up-right"></i>Money out</div></div>${rows('out','var(--brand-mid)')}</div>
+    ${dups.length?`<div class="card" style="margin-bottom:10px;background:var(--amber-pale);border-color:#F2C98A"><div style="padding:12px 14px;font-size:13px;color:var(--amber);line-height:1.5"><strong>Counted once:</strong> ${dups.length} Log income entr${dups.length===1?'y matches':'ies match'} a sale already recorded elsewhere, so ${dups.length===1?'it isn\'t':'they aren\'t'} added twice:<br>${dups.map(x=>esc(x.label)+' ('+money(x.amount)+', '+fmt(x.date)+')').join('<br>')}</div></div>`:''}
+    <div class="card" style="margin-bottom:10px"><div style="padding:12px 14px;font-size:13px;color:var(--text2);line-height:1.55">
+      <strong>Where to record money</strong><br>
+      🐐 Sold an animal → its page → Edit → Status: Sold (price and buyer).<br>
+      🧼 Sold soap, milk, meat → Milk or Butcher tab → Sales.<br>
+      🌾 Everything else (hay, vet, supplies, other income) → Log → Add.<br>
+      It all adds up here automatically.</div></div>
+    <button class="btn-secondary" style="margin:0 16px 16px;width:calc(100% - 32px);display:flex;align-items:center;justify-content:center;gap:8px" onclick="downloadBackup(true)"><i class="ti ti-file-spreadsheet"></i>Download ${moneyYear==='All'?'all money':moneyYear+' money'} (Excel)</button>`;
+}
+
+// ═══════════════════════════════════════════════════
+// BACKUP (Nov 2026) — everything in one Excel workbook, a sheet per record
+// type, plus a Money sheet. Photos are left out (too big for a spreadsheet).
+// Uses SheetJS, loaded only when the button is tapped.
+// ═══════════════════════════════════════════════════
+function loadSheetJS(){
+  return new Promise((res,rej)=>{
+    if(window.XLSX) return res(window.XLSX);
+    const s=document.createElement('script');
+    s.src='https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js';
+    s.onload=()=>res(window.XLSX); s.onerror=()=>rej(new Error('load'));
+    document.head.appendChild(s);
+  });
+}
+async function downloadBackup(moneyOnly){
+  toast('Building the spreadsheet…');
+  let X; try{ X=await loadSheetJS(); }catch(e){ toast("Couldn't load the spreadsheet tool — check your signal"); return; }
+  const nameOf=id=>{ const a=S.animals.find(x=>x.id===id); return a?a.name:''; };
+  const clean=rows=>rows.map(r=>{ const o={}; Object.keys(r).forEach(k=>{ if(k==='photo') return; if(k==='animalId'||k==='damId'||k==='fosterId'){ o[k.replace(/Id$/,'')+' (name)']=nameOf(r[k]); return; } if(k==='created'&&r[k]) { o.created=new Date(+r[k]).toISOString().slice(0,10); return; } o[k]=r[k]; }); return o; });
+  const wb=X.utils.book_new();
+  const all=moneyItems(), yr=moneyOnly?moneyYear:'All';
+  const mrows=all.filter(x=>yr==='All'||(x.date||'').startsWith(yr)).sort((a,b)=>(a.date||'').localeCompare(b.date||'')).map(x=>({Date:x.date,'In / Out':x.kind==='in'?'In':'Out',Category:x.source,Description:x.label,Amount:x.kind==='in'?x.amount:-x.amount,'Counted once?':x.dupOf?'Duplicate of a sale — not in totals':''}));
+  X.utils.book_append_sheet(wb,X.utils.json_to_sheet(mrows.length?mrows:[{Note:'No money recorded'}]),'Money');
+  if(!moneyOnly){
+    const sheets=[['animals','Animals'],['medical','Medical'],['breeding','Breeding'],['feed','Weight & Feed'],['milk','Milk'],['products','Products'],['sales','Sales'],['butcher','Butcher'],['freezer','Freezer'],['beds','Garden Beds'],['seeds','Seeds'],['harvest','Harvest'],['reminders','Reminders'],['ranch_log','Ranch Log'],['sitter','Sitter Sheet']];
+    sheets.forEach(([t,label])=>{ const rows=clean(S[t]||[]); X.utils.book_append_sheet(wb,X.utils.json_to_sheet(rows.length?rows:[{Note:'Nothing recorded'}]),label); });
+  }
+  const fname=moneyOnly?`Roped-In-Ranch-money-${yr==='All'?'all':yr}.xlsx`:`Roped-In-Ranch-backup-${today()}.xlsx`;
+  X.writeFile(wb,fname);
 }
 
 // ═══════════════════════════════════════════════════
